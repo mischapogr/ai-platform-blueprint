@@ -121,4 +121,6 @@ Security reports: [SECURITY.md](SECURITY.md).
 
 ## License
 
-License selection is pending. No open-source license is granted by this repository yet.
+Copyright 2026 Mischa Pogrebnyak. Licensed under the
+[Apache License 2.0](LICENSE). See [NOTICE](NOTICE) for attribution.
+Third-party dependencies and user-imported knowledge sources retain their own licenses.

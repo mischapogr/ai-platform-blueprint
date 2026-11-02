@@ -39,3 +39,9 @@ workflow yet. Release qualification remains separate from local test results.
 Keep Markdown documentation filenames uppercase, with the `.md` extension.
 Update links and runbook code references when renaming files. Mermaid diagrams
 should describe implemented behavior or explicitly label planned work.
+
+## License
+
+The project uses [Apache-2.0](LICENSE); attribution is in [NOTICE](NOTICE).
+Keep third-party attribution and license notices intact. Imported source documents
+are not relicensed by contributing application code.
