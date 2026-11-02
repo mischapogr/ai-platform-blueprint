@@ -1,0 +1,26 @@
+name: Bug report
+description: Report a reproducible problem using synthetic data.
+title: "bug: "
+body:
+  - type: markdown
+    attributes:
+      value: For vulnerabilities, follow SECURITY.md. Do not include keys or private documents.
+  - type: input
+    id: revision
+    attributes:
+      label: Commit or version
+      placeholder: Commit SHA or version, plus relevant local changes
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Exact steps with synthetic input and expected versus actual behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment and validation
+      description: OS, Docker/Compose versions, checks run and sanitized diagnostics.

@@ -1,0 +1,50 @@
+name: qualify-local-stack
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: '0.9.16'
+          enable-cache: true
+      - name: Install locked dependencies
+        run: |
+          uv python install 3.12
+          make init
+          uv lock --check
+          uv export --frozen --no-dev --no-emit-project --no-header > /tmp/requirements.txt
+          diff -u requirements.txt /tmp/requirements.txt
+      - name: Lint and unit tests
+        run: make lint test
+      - name: Dependency vulnerability scan
+        run: make scan
+      - name: Build and start local stack
+        run: make up
+      - name: Integration and encrypted restore
+        run: make integration
+      - name: Collection, worker, upload and knowledge restore checks
+        run: make knowledge-test load-test
+      - name: Controlled database outage and recovery
+        run: make failure-test
+      - name: Image vulnerability scan
+        run: make image-scan
+      - name: Upload image scan report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-image-vulnerability-report
+          path: .local/evidence/trivy.json
+          if-no-files-found: ignore
+      - name: Diagnostic logs
+        if: failure()
+        run: ./scripts/compose.sh logs --tail=100
+      - name: Stop this CI project's containers
+        if: always()
+        run: ./scripts/compose.sh down --volumes

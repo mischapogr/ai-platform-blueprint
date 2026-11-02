@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.secrets/
+.local/
+.env
+*.pyc
+.idea/
+.setting.app/
+.setting.shop/
+
+# Imported corpora and local source manifests must stay private.
+.private/
+.env.*
+!.env.example

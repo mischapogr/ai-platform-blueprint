@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light"><title>Knowledge Studio · Local AI</title>
+  <link rel="stylesheet" href="/assets/style.css"><script src="/assets/app.js" defer></script>
+</head>
+<body>
+<div id="unlock" class="unlock-wrap">
+  <form id="unlock-form" class="unlock-card">
+    <span class="brand-mark">k<span>·</span></span><p class="eyebrow">YOUR LOCAL AI WORKSPACE</p>
+    <h1>A little space<br>for big questions.</h1><p>Explore your sources, connect ideas, and keep each area of knowledge in its own collection.</p>
+    <label for="access-key">Workspace access key</label><input id="access-key" type="password" autocomplete="current-password" required placeholder="Enter your local access key">
+    <p class="help">Find your key in <code>.secrets/workspace_token</code>. It stays on this machine.</p>
+    <button type="submit" class="primary">Open workspace <span>↗</span></button><p id="unlock-error" role="alert"></p>
+  </form>
+</div>
+<div id="workspace" hidden>
+  <aside class="sidebar">
+    <a class="brand" href="/"><span class="brand-mark small">k<span>·</span></span><span>knowledge<span class="brand-sub">LOCAL STUDIO</span></span></a>
+    <div class="workspace-label"><span class="status-dot"></span> Personal workspace</div>
+    <nav aria-label="Workspace"><button class="nav-button active" data-view="chat"><span>◈</span> Ask & explore</button><button class="nav-button" data-view="library"><span>▤</span> Source library <span id="source-count" class="count">0</span></button><button class="nav-button" data-view="settings"><span>◎</span> Models & usage</button></nav>
+    <div class="collection-heading"><span>COLLECTIONS</span><button id="new-collection" class="icon-button" aria-label="Create collection">+</button></div>
+    <div id="collection-list" class="collection-list"></div>
+    <div class="sidebar-bottom"><div class="local-note"><span class="status-dot"></span><div>Local by default<small>You decide what leaves this machine.</small></div></div><button id="lock-workspace" class="subtle">Lock workspace ↗</button></div>
+  </aside>
+  <main>
+    <header class="topbar"><div class="breadcrumb">Workspace <span>/</span> <strong id="view-label">Ask & explore</strong></div><div class="topbar-right"><span class="badge" id="provider-status">Offline mode</span><span class="avatar">Y</span></div></header>
+    <section id="chat-view" class="view">
+      <div class="page-heading"><div><p class="eyebrow">THINK WITH YOUR SOURCES</p><h1>A clearer view.</h1><p>Ask a question. Follow the evidence. See what connects.</p></div><button id="clear-chat" class="secondary">↺ New conversation</button></div>
+      <div class="context-bar"><div><span class="context-icon">▦</span><span>Searching in <strong id="active-collection">No collection selected</strong></span></div><span id="collection-policy" class="mini-badge">Local only</span></div>
+      <div id="messages" class="messages" aria-live="polite">
+        <div id="welcome" class="welcome"><div class="orbit">✳</div><h2>Your knowledge, in conversation.</h2><p>Start with a collection of sources, or switch to general chat<br>to talk directly with a connected model.</p><div class="suggestions"><button data-prompt="What are the main ideas in these sources?">Find the main ideas <span>↗</span></button><button data-prompt="Explain a key concept and cite the passages that support it.">Understand a concept <span>↗</span></button><button data-prompt="What do these sources agree and disagree about?">Connect the dots <span>↗</span></button></div><button id="welcome-add" class="text-button">+ Add your first source</button></div>
+      </div>
+      <form id="chat-form" class="composer"><label for="question" class="sr-only">Your question</label><textarea id="question" rows="2" maxlength="2000" placeholder="What would you like to understand?" required></textarea><div class="composer-controls"><div class="control-group"><select id="chat-mode" aria-label="Chat mode"><option value="knowledge">▤ Knowledge</option><option value="chat">◇ General chat</option></select><select id="chat-provider" aria-label="Answer provider"><option value="offline">Local search</option><option value="openai">OpenAI</option></select><select id="chat-model" aria-label="Model" hidden></select></div><button id="send" class="send" type="submit" aria-label="Send question">↑</button></div><label id="consent-row" class="consent" hidden><input type="checkbox" id="external-consent"> Send this question, recent conversation and selected passages to OpenAI.</label></form>
+      <div class="composer-foot"><span id="mode-note">Local search returns source passages without a model call.</span><span>Sources inform answers. Always check the references.</span></div>
+    </section>
+    <section id="library-view" class="view" hidden>
+      <div class="page-heading"><div><p class="eyebrow">A HOME FOR YOUR KNOWLEDGE</p><h1>Source library.</h1><p>Web pages, books, and notes. One collection at a time.</p></div><button id="add-source" class="primary">+ Add source</button></div>
+      <div class="library-summary"><div><span class="summary-label">COLLECTION</span><h2 id="library-collection">Choose a collection</h2></div><div><strong id="library-source-count">0</strong><span>sources</span></div><div><strong id="library-chunk-count">0</strong><span>indexed passages</span></div><span id="library-policy" class="mini-badge">Local only</span></div>
+      <div class="table-header"><h3>Your sources</h3><span>Indexing runs in the background</span></div><div id="sources" class="source-list"></div>
+      <div class="collection-actions"><button id="delete-collection" class="subtle danger">Delete this collection</button></div>
+    </section>
+    <section id="settings-view" class="view" hidden>
+      <div class="page-heading"><div><p class="eyebrow">KNOW WHAT POWERS YOUR ANSWERS</p><h1>Models & usage.</h1><p>Keep the connection explicit. Keep your keys private.</p></div></div>
+      <div class="settings-grid"><article class="settings-card"><span class="eyebrow">MODEL CONNECTION</span><h2>OpenAI API</h2><p id="connection-detail">Checking connection configuration…</p><p>Configure a project API key with <code>make configure-openai</code> in your local terminal. The key is never returned to the browser.</p><a href="https://platform.openai.com/settings/organization/billing/overview" target="_blank" rel="noopener noreferrer">View API billing ↗</a></article><article class="settings-card"><span class="eyebrow">DATA BOUNDARIES</span><h2>A collection is a context.</h2><p>Chats search only the selected collection. Local-only collections cannot be sent to an external model. Embedding methods are fixed when a collection is created.</p><p>This is a single-owner workspace. For different organizations, use separate deployments.</p></article></div>
+      <article class="settings-card usage-card"><span class="eyebrow">PROVIDER-REPORTED TOKENS</span><h2>Usage on this workspace</h2><div id="usage"></div><p class="help">These are recorded API calls, not your credit balance or a billing guarantee. Provider billing remains the source of truth.</p></article>
+    </section>
+    <div id="notice" class="notice" role="status" hidden></div>
+  </main>
+</div>
+<dialog id="collection-dialog"><form id="collection-form"><div class="dialog-heading"><h2>Create a collection</h2><button type="button" class="icon-button close-dialog" aria-label="Close">×</button></div><p>A focused area of knowledge. Sources and chats stay within this boundary.</p><label for="collection-name">Collection name</label><input id="collection-name" maxlength="100" required placeholder="e.g. Research notes"><label for="collection-description">Description <span class="optional">optional</span></label><textarea id="collection-description" maxlength="500" rows="2" placeholder="What belongs here?"></textarea><label for="embedding-method">Search method</label><select id="embedding-method"><option value="offline">Local lexical search · no API calls</option><option value="openai">OpenAI semantic embeddings · API usage</option></select><label class="check-row"><input type="checkbox" id="collection-external"> Allow this collection’s text to be processed by OpenAI.</label><p class="help">OpenAI embeddings send document text during indexing and questions during retrieval. A new method requires a new collection and reimport.</p><button type="submit" class="primary">Create collection <span>↗</span></button><p id="collection-error" role="alert"></p></form></dialog>
+<dialog id="source-dialog"><form id="source-form"><div class="dialog-heading"><h2>Add a source</h2><button type="button" class="icon-button close-dialog" aria-label="Close">×</button></div><p id="source-collection-label"></p><label for="source-kind">Source type</label><select id="source-kind"><option value="website">Public website</option><option value="file">PDF, text or Markdown file</option><option value="text">Paste text</option></select><div id="source-title-wrap"><label for="source-title">Title</label><input id="source-title" maxlength="160" placeholder="A name you’ll recognize"></div><div id="website-fields"><label for="source-url">Website URL</label><input id="source-url" type="url" placeholder="https://example.com"><p class="help">Imports up to 5 pages on the same host and respects robots.txt.</p></div><div id="file-fields" hidden><label class="file-drop" for="source-file"><span>↥</span><strong>Choose a document</strong><small>PDF, TXT or MD · up to 10 MiB</small><input id="source-file" type="file" accept=".pdf,.txt,.md"></label><p class="help">Use documents you’re allowed to process. Image-only PDFs need OCR first.</p></div><div id="text-fields" hidden><label for="source-text">Text</label><textarea id="source-text" rows="7" maxlength="16000" placeholder="Paste your notes or an excerpt…"></textarea></div><p id="source-processing-note" class="help"></p><button type="submit" class="primary">Add to knowledge base <span>↗</span></button><p id="source-error" role="alert"></p></form></dialog>
+<dialog id="preview-dialog"><div class="dialog-heading"><h2 id="preview-title">Source passages</h2><button type="button" class="icon-button close-dialog" aria-label="Close">×</button></div><div id="preview-content"></div></dialog>
+</body></html>

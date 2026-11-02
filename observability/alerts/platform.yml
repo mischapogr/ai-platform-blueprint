@@ -1,0 +1,31 @@
+groups:
+  - name: platform
+    rules:
+      - alert: DatabaseUnavailable
+        expr: platform_database_up == 0
+        for: 15s
+        labels:
+          severity: warning
+        annotations:
+          summary: Application database probe failed
+          runbook_url: http://127.0.0.1:8080/runbooks/database-unavailable
+          description: See docs/runbooks/DATABASE-UNAVAILABLE.md in the repository.
+      - alert: ApiUnavailable
+        expr: up{job="api"} == 0
+        for: 15s
+        labels:
+          severity: warning
+        annotations:
+          summary: API scrape unavailable
+          description: Check API container status and Compose logs.
+          runbook_url: http://127.0.0.1:8080/runbooks/database-unavailable
+
+      - alert: KnowledgeWorkerUnavailable
+        expr: platform_worker_heartbeat_age_seconds > 210
+        for: 30s
+        labels:
+          severity: warning
+        annotations:
+          summary: Knowledge worker heartbeat is stale
+          description: Inspect worker status and durable ingestion jobs.
+          runbook_url: http://127.0.0.1:8080/runbooks/knowledge-ingestion

@@ -1,0 +1,5 @@
+[
+  {"title":"PostgreSQL backup recovery", "content":"PostgreSQL backup recovery uses an encrypted pg_dump archive. A restore test runs on an isolated temporary database. Never restore a test archive over the running application database."},
+  {"title":"Database incident runbook", "content":"When the database is unavailable the API readiness returns 503. Liveness stays healthy. Check the database container and disk space, restart the database, then verify readiness and retrieval."},
+  {"title":"Observability metrics logs", "content":"Prometheus collects request rate, error rate and latency metrics. Grafana displays the dashboard. Alloy ships structured API request logs to Loki without recording document contents."}
+]
