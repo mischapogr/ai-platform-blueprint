@@ -114,7 +114,7 @@ not independent multi-user security domains. The unauthenticated legacy syntheti
 `/documents` and `/query` endpoints remain separate from workspace data. Public
 hosting, multi-tenant identity, TLS, offsite recovery and distributed tracing remain
 open work. The recorded [image scan](docs/SECURITY-SCAN.md) is not a production
-security approval; its open findings must remain visible.
+security approval; scan failures must remain visible and blocking.
 
 Contribution and commit conventions: [CONTRIBUTING.md](CONTRIBUTING.md).
 Security reports: [SECURITY.md](SECURITY.md).

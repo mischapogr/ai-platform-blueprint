@@ -1,10 +1,10 @@
-FROM python:3.12-slim-trixie
+FROM python:3.12-alpine3.24@sha256:e6dae589c1c05976188fd3bd019afd091445fc533ed2ea29001beddc7368a9c8
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 WORKDIR /app
 COPY requirements.txt .
-RUN pip install --no-cache-dir --require-hashes -r requirements.txt \
-    && groupadd --gid 10001 platform \
-    && useradd --uid 10001 --gid 10001 --no-create-home platform \
+RUN pip install --no-cache-dir --only-binary=:all: --require-hashes -r requirements.txt \
+    && addgroup -g 10001 platform \
+    && adduser -D -H -u 10001 -G platform platform \
     && mkdir -p /var/log/platform && chown 10001:10001 /var/log/platform
 COPY apps/api/platform_api ./platform_api
 COPY docs/runbooks /app/runbooks

@@ -40,7 +40,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: api-image-vulnerability-report
-          path: .local/evidence/trivy.json
+          path: |
+            .local/evidence/trivy.json
+            .local/evidence/trivy-summary.md
           if-no-files-found: ignore
       - name: Diagnostic logs
         if: failure()

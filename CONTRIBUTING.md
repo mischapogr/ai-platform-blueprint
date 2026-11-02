@@ -17,8 +17,9 @@ make load-test
 
 Run the integration and failure scenarios sequentially against the disposable
 local stack. `make model-smoke` performs a real API request and is opt-in; it is
-not part of CI. The strict image-security gate currently has open findings; see
-[SECURITY-SCAN.md](docs/SECURITY-SCAN.md). Do not suppress findings merely to make CI green.
+not part of CI. The strict image-security gate blocks HIGH/CRITICAL findings, including unfixed
+ones; see [SECURITY-SCAN.md](docs/SECURITY-SCAN.md). Do not suppress findings merely
+to make CI green.
 
 ## Commits and versions
 

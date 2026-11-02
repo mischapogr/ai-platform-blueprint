@@ -38,6 +38,8 @@ services:
       context: ../..
       dockerfile: apps/api/Dockerfile
     read_only: true
+    # Keep musl resolver retries below the 4s Prometheus scrape timeout when DB DNS disappears.
+    dns_opt: ['timeout:1', 'attempts:1']
     tmpfs: ['/tmp:size=16m,mode=1777']
     environment:
       DB_HOST: db

@@ -1,4 +1,4 @@
-# Local validation
+# Initial local validation — 2026-11-02
 
 Date: 2026-11-02. Linux amd64, Python 3.12.3, Docker Engine 29.9.2,
 Compose 5.6.1 and uv 0.9.16. Runtime dependencies are locked in `uv.lock`
@@ -21,7 +21,7 @@ and exported with hashes in `requirements.txt`.
 | Recovery | readiness/retrieval recovered, alert cleared, document snapshot unchanged |
 | Load smoke | 20 liveness requests with four concurrent clients; observed max 0.015s in this run; no capacity claim |
 | Python runtime audit | no known vulnerabilities; hash verification enabled |
-| API/frontend image scan | strict gate fails on 45 HIGH package findings, nine CVE IDs, zero CRITICAL; [snapshot](SECURITY-SCAN.md) |
+| API/frontend image scan | superseded by the 2026-11-03 passing Alpine snapshot below; [report](SECURITY-SCAN.md) |
 | CI workflow | actionlint passed locally; no GitHub CI run performed |
 | Mermaid docs | eight diagrams rendered successfully to SVG; links and uppercase filenames checked |
 
@@ -41,7 +41,7 @@ make integration
 make failure-test
 make load-test
 make scan
-make image-scan  # expected to fail the current image-security gate
+make image-scan  # blocks HIGH/CRITICAL findings, including unfixed ones
 ```
 
 Run write/restore/outage tests sequentially, without simultaneous imports or source
@@ -67,3 +67,30 @@ Tempo and distributed tracing remain planned, not active.
 The stack remains running locally. `make down` stops this project's containers
 without deleting data volumes. The [workspace guide](KNOWLEDGE-WORKSPACE.md)
 explains collection boundaries and model setup.
+
+## CI scan remediation — 2026-11-03
+
+The previously failing scan used Debian 13.7 and reported 45 HIGH package findings.
+The API/worker now builds from a digest-pinned Alpine Python image with identical
+hash-locked dependencies and binary wheels only. The strict local Trivy scan
+passes with zero HIGH/CRITICAL findings across detected OS and Python packages.
+This is not a suppression or a relaxed severity threshold.
+
+The scan now emits a readable log/job summary and uploads both JSON and Markdown
+reports. Regression tests cover unfixed HIGH findings, scanner operational errors
+and invalid reports. All **26 unit tests** and Ruff checks pass. Native extensions
+and authenticated encryption were exercised inside the Alpine image with no
+network access or credentials. actionlint passed for the updated workflow.
+
+An isolated Compose project with fresh empty provider credentials and separate
+ports is used for runtime regression qualification, preserving the existing user
+workspace. Actual qualification times remain 2026-11-03, independent of commit
+timestamp normalization. Remote CI results must be checked on the fixed revision.
+
+The isolated Alpine qualification passed: startup, legacy and knowledge ingestion,
+collection isolation, worker stop/start recovery, both encrypted restore comparisons,
+DB outage/alert/recovery and the 20-request load smoke. Test containers and volumes
+were removed after qualification. No provider key or paid model call was used.
+The initial unbounded-resolver trial timed out the Prometheus scrape; with explicit
+resolver retry limits, the DB-down scrape stayed up at approximately 1.01 seconds
+and `DatabaseUnavailable` fired. Scrape and alert deadlines were not relaxed.

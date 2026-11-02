@@ -9,7 +9,7 @@ synthetische Beispiele; echte Quellen bleiben in privater lokaler Konfiguration.
 ```mermaid
 flowchart TB
     M1["M1: Lokales MVP<br/>funktional geprüft"]
-    Gate["Image-Security-Gate<br/>offen: 45 HIGH-Paketbefunde"]
+    Gate["Image-Security-Gate<br/>lokal bestanden; CI separat prüfen"]
     M2["M2: Workspace, Jobs und KI<br/>teilweise umgesetzt; Live-Modell und Tracing offen"]
     M3["M3: Hetzner, Ansible, TLS und Auth<br/>offen; Zugang und Kostenfreigabe nötig"]
     M4["M4: Rollback und Offsite-Recovery<br/>offen"]
@@ -20,12 +20,12 @@ flowchart TB
 ```
 
 Die durchgezogenen Pfeile zeigen die vorgeschlagene Umsetzungsreihenfolge,
-keinen Zeitplan. Das offene Security-Gate ist eine zusätzliche Freigabegrenze;
+keinen Zeitplan. Das Security-Gate ist eine zusätzliche Freigabegrenze;
 ein funktionierendes MVP allein erteilt keine Produktionsfreigabe.
 
 ## M1 – ausführbares lokales MVP
 
-Funktional lokal umgesetzt und geprüft. Das Image-Security-Gate bleibt offen;
+Funktional lokal umgesetzt und geprüft. Das Image-Security-Gate besteht lokal;
 siehe [Security-Scan](SECURITY-SCAN.md). Keine Produktionsfreigabe.
 
 - Compose startet API, PostgreSQL/pgvector und Traefik mit Healthchecks.

@@ -1,49 +1,65 @@
-# Lokaler Security-Scan
+# API image security scan
 
-Stand: 2026-11-02. Dies ist ein begrenzter Scanbefund, kein Security-Audit.
+Current local snapshot: 2026-11-03, Trivy 0.76.1, Linux amd64.
+This is a scoped vulnerability scan, not a complete security audit.
 
-## Ergebnis
+## Current result
 
-- Runtime-Dependency-Scan mit pip-audit und erzwungenen Hashes: keine bekannten Befunde.
-- API-Image mit Trivy 0.76.1: **45 HIGH-Paketbefunde, 9 verschiedene CVE-IDs, 0 CRITICAL**.
-- Alle 45 Einträge haben im Scan kein `FixedVersion`-Feld. Das beweist keine fehlende Ausnutzbarkeit.
-- HIGH/CRITICAL-Befunde in den Python-Paketen des Images: 0.
-- Das strenge Image-Gate liefert Exit 1. Es gibt keine Unterdrückung, Allowlist oder Ausnahme für ungefixte Befunde.
+- **0 HIGH and 0 CRITICAL** findings in the API/worker image.
+- Both OS packages and installed Python packages were detected and scanned.
+- Gate policy remains HIGH/CRITICAL, including unfixed vulnerabilities. No allowlist,
+  `ignore-unfixed`, `continue-on-error` or vulnerability suppression is used.
+- The API/worker runtime now uses a digest-pinned Alpine Python base with the same
+  hash-locked Python dependencies. Binary wheels are required; no compiler/toolchain
+  is installed to build dependencies in the runtime image.
 
-Image-ID: `sha256:94e6d7e52a52a13dc4cd715187d64fe00ddb00be7560bdd8347d633c8978b1e4`.
-Dieser Snapshot bezieht sich auf die genannte Image-ID; spätere Builds sind
-nicht automatisch durch ihn abgedeckt.
-Basis: `python:3.12-slim-trixie`, im Scan Debian 13.7.
-Scanzeit: `2026-11-02T20:34:14.961405145Z`.
+Image ID: `sha256:52f197597753914fef8e8b5db47f1ab91e395b65afdffa6ea460c7253f345927`.
+Base: `python:3.12-alpine3.24@sha256:e6dae589c1c05976188fd3bd019afd091445fc533ed2ea29001beddc7368a9c8`.
+Detected OS: alpine 3.24.3.
+Scan time: `2026-11-03T05:39:41.326392418Z`.
 
-## Zusammengefasste offene Befunde
+This snapshot applies to the identified image only. Later builds and vulnerability
+DB updates require another scan. ARM64 is not qualified by this local amd64 run.
 
-| Advisory | Betroffene Pakete | Severity | Fix im Scan |
-|---|---|---|---|
-| CVE-2025-69720 | libncursesw6, libtinfo6, ncurses-base, ncurses-bin | HIGH | keiner angegeben |
-| CVE-2026-119373 | libsqlite3-0 | HIGH | keiner angegeben |
-| CVE-2026-16742 | libsystemd0, libudev1 | HIGH | keiner angegeben |
-| CVE-2026-54369 | libacl1 | HIGH | keiner angegeben |
-| CVE-2026-76642 | bsdutils, libblkid1, liblastlog2-2, libmount1, libsmartcols1, libuuid1, login, mount, util-linux | HIGH | keiner angegeben |
-| CVE-2026-78408 | bsdutils, libblkid1, liblastlog2-2, libmount1, libsmartcols1, libuuid1, login, mount, util-linux | HIGH | keiner angegeben |
-| CVE-2026-78409 | bsdutils, libblkid1, liblastlog2-2, libmount1, libsmartcols1, libuuid1, login, mount, util-linux | HIGH | keiner angegeben |
-| CVE-2026-78410 | bsdutils, libblkid1, liblastlog2-2, libmount1, libsmartcols1, libuuid1, login, mount, util-linux | HIGH | keiner angegeben |
-| CVE-2026-9538 | perl-base | HIGH | keiner angegeben |
+## Why the previous GitHub run failed
 
-## Reproduktion und Grenze
+The 2026-11-02 Debian 13.7 image produced 45 HIGH package findings across nine CVE
+IDs, with no fixed version supplied in that report. Trivy correctly returned 1;
+Make translated that into exit code 2. The scanner had completed successfully,
+but JSON-only output hid the findings from the job log.
+
+The new base removes that affected Debian package set. This does not assert that
+upstream Debian has fixed those CVEs or that every service image is vulnerability-free.
+The previous failing run is [41524422926](https://github.com/mischapogr/ai-platform-blueprint/actions/runs/41524422926).
+
+## Runtime compatibility
+
+The Alpine transition initially exposed a DNS retry difference during the DB-stop
+scenario: `/metrics` exceeded Prometheus's four-second scrape timeout, so the
+DB gauge could not reach the alert evaluator. API resolver options explicitly
+bound DNS retries (`timeout:1`, `attempts:1`) while retaining the existing DB
+connection/statement timeouts, scrape deadline and alert hold time. Qualification
+must cover this outage/recovery path, not just startup and an empty vulnerability report.
+
+## Reproduction and failure behavior
 
 ```bash
-make scan
-make image-scan    # erwarteter Exit 1 für diesen Stand
+make image-scan
 ```
 
-Der vollständige lokale JSON-Bericht liegt ignoriert unter `.local/evidence/trivy.json`.
-Das Scan-Skript exportiert das API-Image; der Scanner erhält keinen Docker-Socket.
-CI verwendet denselben Befehl und lädt ausschließlich den Scanbericht als Artefakt hoch.
-Ein grüner CI-/Release-Status wird nicht behauptet. Ein GitHub-Lauf wurde hier nicht ausgeführt.
+The scan keeps `.local/evidence/trivy.json` and emits a readable package/advisory
+summary to stdout, `.local/evidence/trivy-summary.md` and GitHub's job summary.
+CI uploads both reports. Previous report files are removed before scanning.
+Only the image archive, report file and vulnerability cache are mounted into the
+scanner; it receives no Docker socket, credentials or knowledge snapshots.
 
-Die übrigen Service-Images sind in diesem Nachweis nicht auf CVEs geprüft.
-MEDIUM/LOW-Befunde, IaC-/Secret-Scans, Reachability-Analyse, Hosthärtung und
-ein unabhängiger Review sind nicht abgedeckt. Vor öffentlichem Betrieb sind die
-offenen Befunde zu triagieren und zu beheben oder ausdrücklich begründet freizugeben.
-Keine solche Freigabe ist erfolgt. Den Bericht nach Updates erneut erzeugen.
+Regression checks cover a clean report, an unfixed HIGH finding, an operational
+scanner failure and invalid/empty reports. Findings remain blocking, and scanner
+failures are never replaced by a successful report-rendering exit status.
+
+## Evidence boundary
+
+The local strict gate passes. The fixed revision still needs an actual GitHub CI
+run before remote CI success can be claimed. Other service images, MEDIUM/LOW
+findings, malicious-input reachability, secret/IaC scans, host security and a full
+independent review are outside this snapshot. Production approval is not granted.

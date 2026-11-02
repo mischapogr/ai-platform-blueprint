@@ -8,7 +8,7 @@ Sie beschreiben das lokale MVP oder ausdrücklich als offen markierte Ausbaustuf
 | [Knowledge Workspace](KNOWLEDGE-WORKSPACE.md) | Collections, frontend, imports, model configuration and processing policies |
 | [Ingestion runbook](runbooks/KNOWLEDGE-INGESTION.md) | Queue, worker, retry and source errors |
 | [Architektur](ARCHITECTURE.md) | Dienste, Netzgrenzen und Retrieval-Sequenz |
-| [Roadmap](ROADMAP.md) | Entwicklungsstufen und offenes Security-Gate |
+| [Roadmap](ROADMAP.md) | Entwicklungsstufen und Security-Gate |
 | [Threat Model](THREAT-MODEL.md) | Vertrauensgrenzen, Datenflüsse und Risiken |
 | [Disaster Recovery](DISASTER-RECOVERY.md) | Verschlüsselter Backup-Pfad und isolierter Restore |
 | [DB-Runbook](runbooks/DATABASE-UNAVAILABLE.md) | Ausfall, Erkennung, Alert und Recovery |
