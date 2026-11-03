@@ -14,3 +14,8 @@ __pycache__/
 .private/
 .env.*
 !.env.example
+
+# Infrastructure state and local Terraform backend metadata.
+.terraform/
+*.tfstate
+*.tfstate.*

@@ -1,0 +1,66 @@
+services:
+  distribution:
+    image: ${LAB_DISTRIBUTION_IMAGE:-registry:3}
+    user: '${LAB_UID}:${LAB_GID}'
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    volumes: ['${LAB_STATE}/registry-config.yaml:/etc/distribution/config.yml:ro', '${LAB_STATE}/registry-data:/var/lib/registry']
+    networks: [lab]
+    mem_limit: 256m
+    cpus: 1
+    restart: unless-stopped
+  nexus:
+    profiles: [nexus]
+    image: ${LAB_NEXUS_IMAGE}
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    environment:
+      INSTALL4J_ADD_VM_PARAMS: -Xms768m -Xmx1536m -XX:MaxDirectMemorySize=1024m -Djava.util.prefs.userRoot=/nexus-data/javaprefs
+    volumes: [nexus_data:/nexus-data]
+    networks: [lab]
+    mem_limit: 4g
+    cpus: 2
+    restart: unless-stopped
+    logging:
+      options: {max-size: 5m, max-file: '2'}
+  registry:
+    image: ${LAB_CADDY_IMAGE}
+    user: '${LAB_UID}:${LAB_GID}'
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs: ['/tmp:mode=1777,size=16m', '/data:mode=1777,size=16m', '/config:mode=1777,size=16m']
+    volumes:
+      - ${LAB_STATE}/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ${LAB_SECRETS}/registry.crt:/tls/server.crt:ro
+      - ${LAB_SECRETS}/registry.key:/tls/server.key:ro
+    ports: ['127.0.0.1:${LAB_REGISTRY_PORT}:5443', '127.0.0.1:${LAB_NEXUS_PORT}:5444']
+    networks: [lab, management]
+    mem_limit: 128m
+    cpus: 0.5
+    restart: unless-stopped
+    logging:
+      options: {max-size: 5m, max-file: '2'}
+  alerts:
+    image: ${LAB_TOOLS_IMAGE}
+    user: '${LAB_UID}:${LAB_GID}'
+    command: [python, /receiver.py]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    volumes:
+      - ${LAB_ROOT}/scripts/local_lab/artifact_server.py:/receiver.py:ro
+      - ${LAB_STATE}/alerts:/data
+      - ${LAB_STATE}/backups:/backups
+      - ${LAB_SECRETS}/registry-password:/run/registry-password:ro
+    networks: [lab]
+    mem_limit: 64m
+    cpus: 0.25
+    restart: unless-stopped
+networks:
+  management: {}
+  lab:
+    internal: true
+volumes:
+  nexus_data:

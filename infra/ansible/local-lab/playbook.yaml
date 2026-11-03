@@ -1,0 +1,94 @@
+- name: Configure only the disposable local guest
+  hosts: lab
+  become: true
+  gather_facts: false
+  pre_tasks:
+    - name: Wait for guest SSH
+      ansible.builtin.wait_for_connection:
+        timeout: 300
+    - name: Verify the owner-pinned release signature before changing the guest
+      ansible.builtin.command:
+        argv: ['{{ project_root }}/.venv/bin/python', '{{ project_root }}/scripts/local-lab.py', verify]
+      delegate_to: localhost
+      become: false
+      changed_when: false
+  tasks:
+    - name: Install guest runtime packages
+      tags: [provision]
+      ansible.builtin.apt:
+        name: [docker.io, docker-compose-v2, ca-certificates, openssl]
+        update_cache: true
+        cache_valid_time: 3600
+        state: present
+    - name: Enable the guest Docker daemon
+      tags: [provision]
+      ansible.builtin.service:
+        name: docker
+        enabled: true
+        state: started
+    - name: Create the isolated deployment directories
+      ansible.builtin.file:
+        path: '/opt/ai-platform-blueprint/{{ item }}'
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+      loop: ['', postgres, migrations, proxy, monitoring, trust]
+    - name: Create protected runtime secret directory
+      ansible.builtin.file:
+        path: /opt/ai-platform-blueprint/secrets
+        state: directory
+        owner: root
+        group: root
+        mode: '0700'
+    - name: Create guest-only registry trust and authentication directories
+      ansible.builtin.file:
+        path: '{{ item }}'
+        state: directory
+        mode: '0700'
+      loop: ['/etc/docker/certs.d/localhost:{{ registry_port }}', /root/.docker]
+    - name: Install only the local registry CA into this guest's Docker trust
+      ansible.builtin.copy:
+        src: '{{ lab_private }}/ca.crt'
+        dest: '/etc/docker/certs.d/localhost:{{ registry_port }}/ca.crt'
+        mode: '0644'
+      register: registry_ca
+    - name: Install the generated deployment configuration
+      ansible.builtin.copy:
+        src: '{{ deployment_dir }}/'
+        dest: /opt/ai-platform-blueprint/
+        owner: root
+        group: root
+        mode: preserve
+      no_log: true
+    - name: Restrict the proxy TLS private key to its container user
+      ansible.builtin.file:
+        path: /opt/ai-platform-blueprint/proxy/tls.key
+        owner: '65532'
+        group: '65532'
+        mode: '0400'
+    - name: Install registry authentication for guest pulls
+      ansible.builtin.copy:
+        src: '{{ lab_private }}/registry-auth.json'
+        dest: /root/.docker/config.json
+        owner: root
+        group: root
+        mode: '0600'
+      no_log: true
+    - name: Pull only the signed digest-pinned images
+      ansible.builtin.command:
+        argv: [docker, compose, --project-name, blueprint-local, --file, /opt/ai-platform-blueprint/compose.yaml, pull]
+      changed_when: true
+    - name: Start durable storage and wakeup cache
+      ansible.builtin.command:
+        argv: [docker, compose, --project-name, blueprint-local, --file, /opt/ai-platform-blueprint/compose.yaml, up, --detach, --wait, db, redis]
+      changed_when: true
+    - name: Apply the additive application migrations
+      ansible.builtin.command:
+        argv: [docker, compose, --project-name, blueprint-local, --file, /opt/ai-platform-blueprint/compose.yaml, exec, -T, --interactive=false, db, psql, -U, platform_admin, -d, platform, -v, ON_ERROR_STOP=1, -f, '/migrations/{{ item }}']
+      loop: '{{ migrations }}'
+      changed_when: true
+    - name: Start the signed application and monitoring services
+      ansible.builtin.command:
+        argv: [docker, compose, --project-name, blueprint-local, --file, /opt/ai-platform-blueprint/compose.yaml, up, --detach, --wait, --wait-timeout, '180']
+      changed_when: true

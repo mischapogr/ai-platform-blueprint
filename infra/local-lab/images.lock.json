@@ -1,0 +1,52 @@
+{
+  "nexus": {
+    "source": "sonatype/nexus3:latest",
+    "reference": "sonatype/nexus3@sha256:26aaefb94d3fae6d18161a26a9eb5cdf25ce9401ea095f41e8ad5e5cf86b3a20",
+    "config_digest": "sha256:a059731354844eecd1bf8bc4a833c37a2f42e3b97d312ee80574287e3af06eb5"
+  },
+  "skopeo": {
+    "source": "quay.io/skopeo/stable:latest",
+    "reference": "quay.io/skopeo/stable@sha256:62da3f53e4b72219741bfa6681e092d30391a880b6346d20bf064778f7caa3c5",
+    "config_digest": "sha256:56a8d51c0f3bb15e9427d2bb494fcf7403fa167bbcefd83018a7c59f945bff8b"
+  },
+  "caddy": {
+    "source": "caddy:2.11.4",
+    "reference": "caddy@sha256:0c994536bddb66445885237f1a5dcc1916bccea922661c76b4e9fc24061f9b52",
+    "config_digest": "sha256:2d8b1708bf8008935c0e2a9b6564f7f080cf9a73af3b27718f286230449b7101"
+  },
+  "db": {
+    "source": "pgvector/pgvector:0.8.1-pg16-bookworm",
+    "reference": "pgvector/pgvector@sha256:33198da2828a14c30348d2ccb4750833d5ed9a44c88d840a0e523d7417120337",
+    "config_digest": "sha256:4c0c0efbd40e8ff42363074292654a7831cac506fc01a1c89627f1b1040ba341"
+  },
+  "redis": {
+    "source": "redis:7.4.2-alpine",
+    "reference": "redis@sha256:02419de7eddf55aa5bcf49efb74e88fa8d931b4d77c07eff8a6b2144472b6952",
+    "config_digest": "sha256:8f5c54441eb93183170be8c9fc2d8e8275171a6866ca1b4ae682a2ced6a98889"
+  },
+  "proxy": {
+    "source": "traefik:v3.6.1",
+    "reference": "traefik@sha256:fd5932c796f7e2db9fd6bff485ef693d53797f0ee8ad03dc68aa424ea6f21958",
+    "config_digest": "sha256:1fd2908c092e5b20b852f9891b365aa5ec46cf2691388fc2e0d33e9d9758bdf0"
+  },
+  "prometheus": {
+    "source": "prom/prometheus:v3.7.3",
+    "reference": "prom/prometheus@sha256:49214755b6153f90a597adcbff0252cc61069f8ab69ce8411285cd4a560e8038",
+    "config_digest": "sha256:a683da7699127231b140f7dbd7d60e9741d51543ba91c656bf3287860a39428f"
+  },
+  "alertmanager": {
+    "source": "prom/alertmanager:v0.29.0",
+    "reference": "prom/alertmanager@sha256:88743b63b3e09ea6e31e140ced5bf45f4a8e82c617c2a963f78841f4995ad1d7",
+    "config_digest": "sha256:e0057376123cda19f6773d2ca309c3850a111ec9569e5267a22048a935e8159d"
+  },
+  "node": {
+    "source": "prom/node-exporter:v1.9.1",
+    "reference": "prom/node-exporter@sha256:d00a542e409ee618a4edc67da14dd48c5da66726bbd5537ab2af9c1dfc442c8a",
+    "config_digest": "sha256:255ec253085fb105696533b31864a5e3b64f1f1e2147b5ec368100cbf3ec9b80"
+  },
+  "distribution": {
+    "source": "registry:3",
+    "reference": "registry@sha256:d4032d4cc323c1731c707931ecada07a53076eac38e3b61ae57533f170f2c6c3",
+    "config_digest": "sha256:ab6936a3291f1ddd0e9a88108f4739553a2cfff91489df98c0e24def15701a1c"
+  }
+}
