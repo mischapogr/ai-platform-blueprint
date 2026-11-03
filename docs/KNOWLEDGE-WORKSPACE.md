@@ -103,6 +103,13 @@ necessary. The UI reports token counts from provider responses, not estimated cr
 
 ## Operational checks
 
+The optional [Ollama provider](LOCAL-MODELS.md) adds local semantic indexing and
+local generated answers. Select it explicitly in collection creation and the
+composer. Its endpoint/model/digest/dimensions/profile are checked before embedding;
+changes require a new collection and reimport. A local-only collection can use it
+while continuing to block external processing. `make local-model-test` runs a
+separate synthetic qualification without accessing this workspace's sources or keys.
+
 `make knowledge-test` checks authentication, collection isolation, source deletion,
 text upload, worker stop/start recovery and an isolated full knowledge restore.
 `make load-test` only checks 20 liveness requests with four concurrent clients;

@@ -4,13 +4,16 @@ Ziel: eine kleine, wiederverwendbare Betriebsreferenz für SaaS-/KI-Anwendungen,
 mit einer in wenigen Minuten erklärbaren lokalen Demo. Im Repository stehen
 synthetische Beispiele; echte Quellen bleiben in privater lokaler Konfiguration.
 
+The [English capability backlog](BACKLOG.md) defines the next work packages,
+acceptance criteria, estimates and dependencies within these milestones.
+
 ## Entwicklungsstufen und Nachweise
 
 ```mermaid
 flowchart TB
     M1["M1: Lokales MVP<br/>funktional geprüft"]
     Gate["Image-Security-Gate<br/>lokal bestanden; CI separat prüfen"]
-    M2["M2: Workspace, Jobs und KI<br/>teilweise umgesetzt; Live-Modell und Tracing offen"]
+    M2["M2: Workspace, Jobs und KI<br/>lokales Modell, Evaluation, Tracing und Queue geprüft; weitere Abnahme offen"]
     M3["M3: Hetzner, Ansible, TLS und Auth<br/>offen; Zugang und Kostenfreigabe nötig"]
     M4["M4: Rollback und Offsite-Recovery<br/>offen"]
     M5["M5: Tool-Runner und Security-Review<br/>offen"]
@@ -51,9 +54,14 @@ Website-/PDF-/Text-Ingestion, PostgreSQL-Jobqueue mit Redis-Wakeup, Worker-Lease
 Retries/Timeout, optionale OpenAI Responses/Embeddings, Quellenansicht und
 Provider-Tokenzählung. Lokale synthetische Tests benötigen keinen echten API-Key.
 Eine echte Modellantwort und account-spezifische Credits sind erst nach lokaler
-Schlüsselkonfiguration live prüfbar. Tempo/Tracing bleiben offen.
+Schlüsselkonfiguration live prüfbar. Optional tracing and queue ownership are now
+locally qualified; see B03/B04 in the [backlog](BACKLOG.md) and the
+[tracing guide](../observability/tempo/README.md). Local CPU generation and semantic retrieval now have synthetic evidence through B02/B05.
+Human-reviewed answer quality and live OpenAI qualification remain open.
 
-Die folgenden ursprünglichen M2-Anforderungen bleiben Ziel bzw. Nachweisgrenze:
+The original M2 scope below remains the milestone checklist. Tracing and queue
+crash/ownership checks now have local evidence; remaining requirements and remote
+CI execution must be assessed separately:
 
 
 Redis + separater Worker: idempotente Ingestion, begrenzte Retries mit Backoff,
@@ -64,7 +72,13 @@ und geschätzte Kosten getrennt ausweisen. OpenTelemetry + Tempo für API-,
 DB-, Queue- und Provider-Spans; keine Dokumente/Prompts in Telemetrie.
 Abnahme: Retry-/Duplikat-/Timeout-Tests und Trace einer vollständigen Anfrage.
 
-## M3 – einzelner Hetzner-Server (offen)
+## M3 – single-server deployment (local profile implemented; cloud open)
+
+The owner-selected [local reference lab](LOCAL-LAB.md) now implements Terraform
+QEMU provisioning, Ansible, TLS/authentication/rate limits, guest metrics and
+external lab alerts. The cloud-specific scope below remains unimplemented.
+
+### Original cloud scope
 
 Terraform für Server, Firewall und Volumes; Ansible für SSH-Benutzer,
 Paketupdates, Docker, Firewall und Konfiguration. Remote-State und Secrets
@@ -74,7 +88,15 @@ Ressourcenbudgets, Datenaufbewahrung und Plattenwarnungen ergänzen.
 Abnahme: Neuaufbau auf einem freigegebenen Testserver, HTTP-Abweisung,
 TLS-/Auth-Prüfung, externer Alert. Benötigt Owner-Zugang und Kostenfreigabe.
 
-## M4 – Deployment und Disaster Recovery (offen)
+## M4 – deployment and recovery (local profile qualified; offsite open)
+
+The local profile publishes digest-pinned images to an authenticated TLS registry,
+verifies a development-key release signature before deployment, and qualifies a
+populated-data rollback. A fresh-VM recovery drill restored matching data/vectors,
+search and new ingestion after removal of the source disk; measured RPO/RTO are in
+[VALIDATION.md](VALIDATION.md). The following physical-offsite scope remains open.
+
+### Original offsite scope
 
 Images per Digest referenzieren, Herkunft/Signaturen prüfen. Migrationsverfahren
 und kompatible Rollbacks testen; Wartungsfenster zunächst zulässig. Keine

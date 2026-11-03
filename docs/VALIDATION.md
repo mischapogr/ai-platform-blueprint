@@ -62,7 +62,8 @@ embedding calls, automatic source refresh, concurrent multi-user isolation,
 malicious-PDF sandbox qualification, crash recovery at every lease boundary,
 production capacity, full browser accessibility, remote deployment, Hetzner/Ansible,
 TLS, offsite disaster recovery, rollback, zero downtime or complete security approval.
-Tempo and distributed tracing remain planned, not active.
+At this initial validation point Tempo and distributed tracing were still planned;
+the later B03 qualification below supersedes that tracing limitation.
 
 The stack remains running locally. `make down` stops this project's containers
 without deleting data volumes. The [workspace guide](KNOWLEDGE-WORKSPACE.md)
@@ -94,3 +95,115 @@ were removed after qualification. No provider key or paid model call was used.
 The initial unbounded-resolver trial timed out the Prometheus scrape; with explicit
 resolver retry limits, the DB-down scrape stayed up at approximately 1.01 seconds
 and `DatabaseUnavailable` fired. Scrape and alert deadlines were not relaxed.
+
+## Synthetic retrieval baseline — 2026-11-03
+
+B01 now has a [reproducible benchmark](RETRIEVAL-EVALUATION.md) with 14 synthetic
+sources and 48 labeled questions, split evenly into calibration and regression
+sets. The runner builds a dedicated image and invokes the actual ingestion and
+retrieval functions against a fresh PostgreSQL/pgvector database on an internal
+Docker network. No existing workspace volume or secret is mounted, and no model
+provider is called. Chunking settings and the retrieval cutoff were extracted
+into named constants without changing their values or ranking behavior.
+
+Observed local results:
+
+- `make lint test`: Ruff checks passed; all 30 unit tests passed, including metric,
+  relevance-label and regression-gate checks.
+- Baseline recording followed by `make retrieval-eval` on a fresh disposable
+  database: passed with identical per-case retrieval results and aggregate metrics.
+- Regression split: Recall@5 0.815789 and MRR@5 0.721053; four of five unanswerable
+  questions returned passages. Across both splits, nine of ten did so.
+- No collection leakage observed. The high unanswerable false-positive rate is
+  retained as a visible limitation, rather than hidden by baseline tuning.
+- Updated CI workflow passed local actionlint validation. The workflow now runs
+  the quality gate; no remote CI execution was verified for this change.
+- Cleanup audit found no remaining benchmark-labeled containers or networks.
+
+Reviewed synthetic measurements are in `tests/evaluation/baseline.json`. Full
+per-case reports remain in ignored `.local/evidence/ai-blueprint-eval-*.json`.
+Source hashes identify the tested uncommitted application and benchmark code in
+addition to the parent Git revision. These results do not qualify HTTP/session
+behavior, worker scheduling/crash recovery, live semantic embeddings, generated
+answer quality or production relevance. No existing workspace integration or
+outage test was rerun for this change.
+
+## Tracing and queue ownership — 2026-11-03
+
+B03 and B04 add optional manual OpenTelemetry/Tempo tracing, durable traceparent
+propagation and ownership fencing for ingestion attempts. Migration 003 adds
+nullable attempt-token and traceparent columns. Deployment stops the previous
+worker before applying the additive migrations and starting the new version.
+Existing volumes and workspace contents were not changed by qualification.
+
+Local evidence:
+
+- Ruff checks and all 34 unit tests passed, including exception/HTTP privacy,
+  traceparent propagation and resource-attribute checks.
+- `make retrieval-eval` retained the B01 baseline without regeneration or tuning.
+- `make queue-test` covers 13 scenarios: crashes after claim, during processing,
+  before commit and after commit; stale success/failure; expired ownership and
+  retry exhaustion; manual retry; non-retryable errors; timeout handling; bounded
+  provider retries/backoff; deletion; Redis loss; and skipping a locked source.
+- `make tracing-test` verified actual OTLP export into Tempo, HTTP-to-worker-child
+  parent links, two ingestion attempts within one trace, provider error status,
+  absence of a synthetic private-data canary and successful retrieval during a
+  refused exporter connection. The provider failure occurs before network access;
+  it is not a live model qualification.
+- The first extended queue rerun exceeded the 120-second deadline under the
+  Redis client's default retry/backoff policy. Client retries were then explicitly
+  disabled for these best-effort operations. The final queue test retains that
+  deadline and requires processing during Redis refusal within five seconds.
+- The updated locked dependencies passed pip-audit. The qualification image's
+  strict Trivy scan reported zero HIGH/CRITICAL findings without suppression.
+- The optional Compose configuration and updated workflow passed local validation
+  (`compose config --quiet`, actionlint); no remote CI execution was verified.
+
+The input hash in final reports covers application/worker/evaluation code, schema,
+corpus and locked runtime inputs; the runner rejects edits during execution.
+Reports remain in ignored `.local/evidence/ai-blueprint-eval-*.json`. The timeout
+handler uses an injected exception rather than a 180-second wall-clock run. No
+production throughput, malicious-PDF isolation, live semantic quality, remote
+deployment or offsite recovery claim follows from these checks.
+
+## Local infrastructure qualification — 2026-11-03
+
+The owner selected a fully local reference environment and a standard OCI registry.
+This evidence is separate from the original Compose workspace and GitHub Actions.
+Terraform 1.16.5 created real Ubuntu QEMU guests using KVM, 2 vCPUs and 4 GiB RAM;
+Ansible Core 2.20.2 configured the guest. No cloud resources were provisioned.
+
+- API bundle `api-release-608812d5e0fc`: strict Trivy HIGH=0, CRITICAL=0,
+  CycloneDX SBOM, checksum/source provenance and license files.
+- TLS/authenticated OCI publication preserved each scanned/pinned image config
+  identity. Cosign 3.1.4 verified the local-key envelope; altered payload and
+  unrelated-key checks failed as required. No external signing service was used.
+- Final current-image upgrade/rollback also passed all three checks in
+  `.local/evidence/ai-blueprint-rollback-cc33f316ee52.json`: preserved existing
+  index, candidate writes readable after rollback, unsupported local-provider
+  metadata refused before rollback.
+- The original and recovered guests each passed 11 synthetic acceptance checks: HTTPS UI, HTTP redirect,
+  unauthenticated/origin denial, blocked legacy/management routes, ingestion/chat,
+  HTTP 429, guest disk/memory metrics, outage liveness and external firing/resolved
+  database alerts. The registry/alert receiver remained outside the guest.
+- Fresh-disk recovery removed the primary guest/disk, created `recovery`, regenerated
+  runtime credentials and restored from authenticated encrypted storage with the
+  separate controller escrow key. Collections, source SHA-256 payload hashes,
+  chunks and vectors matched. The post-backup write was absent; restored search
+  and new ingestion passed. Wrong-key/corrupt archives were rejected before restore. A subsequent manual
+  recovery-guest backup also verified HTTP 404 for a missing archive.
+- Measured synthetic RPO window: **5.18 s** from backup start to the drill incident.
+  Measured RTO: **150.04 s**, including destruction, fresh VM creation, provisioning,
+  signed-image deployment, restore and application verification. These workstation
+  measurements are not service-level objectives or physical-host-loss evidence.
+- Ruff and 62 unit tests passed, including TLS-origin/cookie checks and the local
+  registry query-authentication/archive/recovery boundaries. New CI results are
+  unverified; the live acceptance exercises HTTP APIs, not a new browser session.
+
+Ignored receipts: `.local/lab/signing-receipt.json`, `acceptance.json`,
+`recovery-receipt.json`, VM metadata and Ansible logs. Reproduction, port discovery,
+trust/key handling and cleanup are in [LOCAL-LAB.md](LOCAL-LAB.md).
+
+Remaining scope: human answer review (B06), a trusted CMS connector (B10), full
+runtime dependency security/release policy, scheduled backups/failure escalation,
+independent key custody, cloud deployment and physical offsite recovery.

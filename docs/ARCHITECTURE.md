@@ -122,7 +122,10 @@ keinen externen Modellaufruf. Metriken und Request-Logs entstehen auch bei Fehle
 Ein Host, eine DB, keine Hochverfügbarkeit oder Mandantentrennung. Die lokale
 Owner-Session ist keine Mehrbenutzer-Authentifizierung. Keine geschätzten
 Kosten oder behaupteten Credit-Balances; API-Tokens werden aus Antworten erfasst.
-Distributed Tracing und echte Modellqualität sind noch nicht qualifiziert. DB-Restart kann
+Optional distributed tracing is now locally qualified; see the
+[tracing guide](../observability/tempo/README.md). Local semantic retrieval and CPU generation now have synthetic evidence through
+[B02/B05](LOCAL-MODELS.md); production relevance and human-reviewed answer quality
+remain unverified. DB-Restart kann
 Requests scheitern lassen. Telemetrie liegt auf demselben Ausfallbereich und ist
 kein externer Alarmkanal. Verfügbarkeit und Ressourcen reichen nur für die lokale
 Demo; Last-/Kapazitätsgrenzen werden nicht behauptet.

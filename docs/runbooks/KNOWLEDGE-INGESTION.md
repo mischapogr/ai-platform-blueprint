@@ -35,9 +35,44 @@ flowchart TD
    model access. Do not paste keys into tickets. After correction, use Retry in
    the source library. Automatic retries can consume additional provider tokens.
 7. Deleting a source removes its original payload, chunks and job by cascade.
-   A running ingestion checks source existence before committing. Deletion does
+   A running ingestion checks source existence and attempt ownership before
+   committing. Deletion does
    not erase previous encrypted backups or data already sent to a provider.
 
 Source content, URLs, keys and questions must never be added to application logs.
 The worker heartbeat is observable via `/metrics`; the alert does not send any
 external notification. A long-running job may defer the heartbeat up to its timeout.
+
+## Attempt ownership and crash qualification
+
+Every claim receives a fresh UUID token. Final index writes and failure/retry
+updates require that token, running status and an unexpired lease. Writers acquire
+source and job locks in that order, matching deletion and manual retry. An expired
+or reclaimed attempt cannot change the active index or fail/requeue a newer job.
+A manual retry resets the attempt count and invalidates the previous owner.
+Redis client retries are explicitly disabled for wakeups/heartbeat operations;
+durable job retries remain in PostgreSQL. Redis failure therefore does not invoke
+the library's exponential retry loop before falling back to database polling.
+
+Migration `003-job-ownership-tracing.sql` is additive. The deployment script stops
+the old worker and its children before applying migrations and starting the new
+application. A job interrupted by that stop remains reclaimable after lease expiry;
+the database volume is preserved. Do not run older workers alongside this version.
+
+```bash
+make queue-test
+```
+
+This runs in a separate temporary database and exercises real child termination
+after claim, during processing, before commit and after commit. It also checks
+stale success/failure, expiry before reclamation, retry exhaustion, manual retry,
+non-retryable child errors, provider failures with backoff, deletion during work,
+Redis unavailability and skipping a source locked by another transaction.
+The timeout handler is tested with an injected `TimeoutExpired`; the suite does
+not wait 180 seconds to qualify the operating system's wall-clock timeout behavior.
+No fault-injection hooks are installed in production code.
+
+Database idempotency does not guarantee exactly-once provider billing: retries
+can repeat embedding calls. For cross-process diagnosis, see the optional
+[tracing guide](../../observability/tempo/README.md). Default CI runs the disposable
+queue and tracing checks without accessing the workspace's sources or secrets.

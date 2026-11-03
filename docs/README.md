@@ -9,6 +9,13 @@ Sie beschreiben das lokale MVP oder ausdrücklich als offen markierte Ausbaustuf
 | [Ingestion runbook](runbooks/KNOWLEDGE-INGESTION.md) | Queue, worker, retry and source errors |
 | [Architektur](ARCHITECTURE.md) | Dienste, Netzgrenzen und Retrieval-Sequenz |
 | [Roadmap](ROADMAP.md) | Entwicklungsstufen und Security-Gate |
+| [Capability backlog](BACKLOG.md) | Prioritized work packages, acceptance criteria, estimates and dependencies |
+| [Retrieval evaluation](RETRIEVAL-EVALUATION.md) | Synthetic quality benchmark, metric definitions, measured baseline and reproduction |
+| [Tracing](../observability/tempo/README.md) | Optional Tempo deployment, request/job correlation and telemetry privacy |
+| [Local models](LOCAL-MODELS.md) | Optional Ollama provider, immutable embedding identity and live CPU qualification |
+| [Answer evaluation](ANSWER-EVALUATION.md) | Fixed/retrieved evidence, deterministic checks and human review rubric |
+| [Local infrastructure lab](LOCAL-LAB.md) | Local OCI registry, signed deployment, TLS/alerts and fresh-VM recovery |
+| [Release qualification](RELEASE-QUALIFICATION.md) | Image/SBOM/provenance bundle, local signatures and rollback compatibility |
 | [Threat Model](THREAT-MODEL.md) | Vertrauensgrenzen, Datenflüsse und Risiken |
 | [Disaster Recovery](DISASTER-RECOVERY.md) | Verschlüsselter Backup-Pfad und isolierter Restore |
 | [DB-Runbook](runbooks/DATABASE-UNAVAILABLE.md) | Ausfall, Erkennung, Alert und Recovery |

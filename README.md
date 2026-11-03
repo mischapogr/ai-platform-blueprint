@@ -1,7 +1,7 @@
 # AI Platform Blueprint
 
 A small self-hosted knowledge workspace with a browser interface, collection-scoped
-retrieval, optional OpenAI chat and semantic embeddings, background ingestion,
+retrieval, optional OpenAI or local Ollama chat and semantic embeddings, background ingestion,
 monitoring, encrypted backups and isolated restore tests.
 
 Import public web pages, PDF books, UTF-8 text or Markdown. Keep different areas
@@ -32,7 +32,9 @@ Open **http://127.0.0.1:8080** and unlock the workspace using the value in
 4. Ask a question in Knowledge mode and inspect the retrieved passages.
 
 Local lexical search uses deterministic 128D word hashing; it is not semantic
-model inference. General chat requires a configured OpenAI connection.
+model inference. General chat requires a configured model provider. The optional
+[local model guide](docs/LOCAL-MODELS.md) explains Ollama, CPU resource budgets,
+model identity and explicit model downloads.
 
 ## Connect OpenAI privately
 
@@ -68,6 +70,12 @@ are preserved by initialization; rotate credentials together with their services
 
 ```bash
 make lint test        # unit checks, no Docker or provider key required
+make retrieval-eval   # synthetic relevance baseline in a separate disposable database
+make queue-test       # disposable crash, lease ownership, retry and deletion checks
+make tracing-test     # disposable Tempo export, cross-process context and privacy checks
+make local-model-test # opt-in CPU inference; project-local model downloads and disposable DB
+make release-package  # unsigned local API/worker image, SBOM, scan and provenance
+make rollback-test    # populated-data compatibility against the recorded Git reference
 make knowledge-test   # auth, ingestion, collection isolation, worker recovery, KB restore
 make integration      # legacy retrieval, telemetry and encrypted restore
 make failure-test     # intentional local DB outage, alert and recovery
@@ -85,6 +93,20 @@ The deployment script applies the additive KB migration before starting the new
 application. It never deletes the existing database volume. PostgreSQL owns the
 durable ingestion queue; Redis wakes the worker and carries heartbeat information.
 The worker has bounded retries, per-job timeout and a recoverable lease.
+Fresh attempt tokens fence stale completion and failure writes. Deployment stops
+old worker processes before applying additive migrations.
+
+Optional [OpenTelemetry/Tempo tracing](observability/tempo/README.md) is enabled by
+`PLATFORM_TRACING=1 make up`; it adds 384 MiB of service memory and no public ports.
+
+The [retrieval benchmark](docs/RETRIEVAL-EVALUATION.md) measures Recall@K, MRR and
+unanswerable false positives on synthetic fixtures. Its baseline is a regression
+reference, not a semantic quality claim.
+
+`make semantic-eval` compares real local embeddings against that same fixed corpus.
+`make answer-eval` runs [answer evaluation](docs/ANSWER-EVALUATION.md) with fixed and
+retrieved evidence. These live local checks are excluded from default CI and use
+no external model credits. Automated answer checks do not replace human review.
 
 Uploads and extracted passages live in PostgreSQL. Backup archives are encrypted
 locally and restore into a separate temporary database without networking or live
@@ -97,23 +119,25 @@ apps/api/                 API, collections, retrieval, provider and ingestion mo
 apps/worker/              Background job supervisor
 apps/demo-rag/frontend/   Same-origin browser workspace
 infra/compose/            Active local deployment and additive SQL migration
-infra/terraform/          Reserved M3 module; no resources implemented yet
-infra/ansible/            Reserved M3 module; no playbooks implemented yet
+infra/terraform/          Local Terraform/QEMU guest module; cloud deployment remains open
+infra/ansible/            Local guest runtime, TLS and signed application deployment
 observability/            Prometheus, alerts, Loki, Alloy and Grafana
-observability/tempo/      Reserved tracing module; not started by Compose
+observability/tempo/      Optional tracing configuration; enabled with PLATFORM_TRACING=1
 scripts/                  Local setup, deployment, source import and recovery
 tests/                    Unit, integration, failure and small load-smoke checks
 docs/                     Uppercase Markdown documentation with Mermaid diagrams
 ```
 
-[Documentation index](docs/README.md) · [Architecture](docs/ARCHITECTURE.md) ·
+[Local infrastructure lab](docs/LOCAL-LAB.md) · [Documentation index](docs/README.md) · [Architecture](docs/ARCHITECTURE.md) ·
 [Roadmap](docs/ROADMAP.md) · [Validation](docs/VALIDATION.md)
 
 This is a single-owner localhost application. Collections are context boundaries,
 not independent multi-user security domains. The unauthenticated legacy synthetic
 `/documents` and `/query` endpoints remain separate from workspace data. Public
-hosting, multi-tenant identity, TLS, offsite recovery and distributed tracing remain
-open work. The recorded [image scan](docs/SECURITY-SCAN.md) is not a production
+hosting, multi-tenant identity and physical offsite recovery remain open work.
+The optional [local infrastructure lab](docs/LOCAL-LAB.md) adds a private OCI
+registry, signed digest deployment, TLS and recovery across fresh QEMU guests.
+The recorded [image scan](docs/SECURITY-SCAN.md) is not a production
 security approval; scan failures must remain visible and blocking.
 
 Contribution and commit conventions: [CONTRIBUTING.md](CONTRIBUTING.md).
