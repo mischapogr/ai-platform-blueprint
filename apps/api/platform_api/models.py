@@ -1,4 +1,4 @@
-"""Backend-only OpenAI adapter. No secret or prompt logging."""
+"""Backend-only provider boundary. No secret, prompt or answer logging."""
 
 import os
 import time
@@ -7,6 +7,7 @@ from pathlib import Path
 from openai import APIError, OpenAI
 from prometheus_client import Counter, Gauge, Histogram
 
+from . import telemetry
 from .retrieval import embed
 
 CALLS = Counter("platform_model_calls_total", "Provider calls", ["operation", "outcome"])
@@ -24,6 +25,9 @@ RECORDED_TOKENS = Gauge(
 RECORDED_CALLS = Gauge(
     "platform_model_recorded_calls", "Persisted provider call totals", ["model", "operation"]
 )
+
+
+PROMPT_VERSION = "reference-v1"
 
 
 class ModelError(Exception):
@@ -59,8 +63,10 @@ def chat_models():
 def record_usage(collection_id, operation, model, input_tokens, output_tokens=0):
     from . import db
 
-    TOKENS.labels(operation, "input").inc(input_tokens)
-    TOKENS.labels(operation, "output").inc(output_tokens)
+    if input_tokens is not None:
+        TOKENS.labels(operation, "input").inc(input_tokens)
+    if output_tokens is not None:
+        TOKENS.labels(operation, "output").inc(output_tokens)
     with db.connect() as conn:
         conn.execute(
             "INSERT INTO kb_usage (collection_id, operation, model, input_tokens, "
@@ -69,9 +75,13 @@ def record_usage(collection_id, operation, model, input_tokens, output_tokens=0)
         )
 
 
-def embeddings(texts, collection):
+@telemetry.traced("provider.embeddings")
+def embeddings(texts, collection, *, purpose="document"):
+    telemetry.annotate(**{"provider.operation": collection["embedding_provider"] + ".embedding"})
     if collection["embedding_provider"] == "offline":
         return [embed(text) for text in texts]
+    if collection["embedding_provider"] == "ollama":
+        return local_embeddings(texts, collection, purpose)
     if not collection["allow_external"]:
         raise ModelError("Collection forbids external processing")
     started = time.perf_counter()
@@ -104,11 +114,7 @@ def embeddings(texts, collection):
         DURATION.labels("embedding").observe(time.perf_counter() - started)
 
 
-def generate(question, history, passages, collection, model):
-    if not collection["allow_external"]:
-        raise ModelError("Collection forbids external processing")
-    if model not in chat_models():
-        raise ModelError("Model is not enabled in this deployment")
+def build_prompt(question, history, passages, *, knowledge=False):
     context = "\n\n".join(
         f"[{i}] {row['title']}\n{row['content']}" for i, row in enumerate(passages, 1)
     )
@@ -119,7 +125,7 @@ def generate(question, history, passages, collection, model):
         "You have no tools and cannot execute actions. "
         "Distinguish source claims from established facts."
     )
-    if not passages:
+    if not passages and not knowledge:
         instructions = (
             "Answer helpfully in the user's language. "
             "You have no tools or source documents. Do not invent citations."
@@ -128,6 +134,21 @@ def generate(question, history, passages, collection, model):
     messages.append(
         {"role": "user", "content": f"REFERENCE PASSAGES:\n{context}\n\nQUESTION:\n{question}"}
     )
+    return instructions, messages
+
+
+@telemetry.traced("provider.generate")
+def generate(question, history, passages, collection, model, *, provider="openai", knowledge=False):
+    telemetry.annotate(**{"provider.operation": provider + ".generation"})
+    instructions, messages = build_prompt(question, history, passages, knowledge=knowledge)
+    if provider == "ollama":
+        return local_generate(model, instructions, messages, collection)
+    if provider != "openai":
+        raise ModelError("Unsupported generation provider")
+    if not collection["allow_external"]:
+        raise ModelError("Collection forbids external processing")
+    if model not in chat_models():
+        raise ModelError("Model is not enabled in this deployment")
     started = time.perf_counter()
     try:
         with client() as sdk:
@@ -155,3 +176,37 @@ def generate(question, history, passages, collection, model):
         ) from None
     finally:
         DURATION.labels("chat").observe(time.perf_counter() - started)
+
+
+def local_embeddings(texts, collection, purpose):
+    from . import local_models
+
+    started = time.perf_counter()
+    try:
+        vectors, tokens = local_models.embeddings(texts, collection, purpose)
+        record_usage(collection["id"], "ollama.embedding", collection["embedding_model"], tokens, 0)
+        CALLS.labels("ollama.embedding", "ok").inc()
+        return vectors
+    except ModelError:
+        CALLS.labels("ollama.embedding", "error").inc()
+        raise
+    finally:
+        DURATION.labels("ollama.embedding").observe(time.perf_counter() - started)
+
+
+def local_generate(model, instructions, messages, collection):
+    from . import local_models
+
+    started = time.perf_counter()
+    try:
+        answer, usage = local_models.generate(model, instructions, messages)
+        record_usage(
+            collection["id"], "ollama.chat", model, usage["input_tokens"], usage["output_tokens"]
+        )
+        CALLS.labels("ollama.chat", "ok").inc()
+        return answer, usage
+    except ModelError:
+        CALLS.labels("ollama.chat", "error").inc()
+        raise
+    finally:
+        DURATION.labels("ollama.chat").observe(time.perf_counter() - started)

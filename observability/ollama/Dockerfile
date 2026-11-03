@@ -1,0 +1,5 @@
+FROM ollama/ollama:0.23.2@sha256:d00473cb58f0082c07cd6ed0d326a8a86f443ab69c51f8fc2b1a41687d45c661
+USER root
+RUN mkdir -p /models && chown 10001:10001 /models
+ENV OLLAMA_MODELS=/models OLLAMA_NO_CLOUD=1 HOME=/tmp
+USER 10001:10001

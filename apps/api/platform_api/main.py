@@ -15,7 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
 from pydantic import BaseModel, Field, field_validator
 
-from . import db
+from . import db, telemetry
 from .retrieval import embed, vector_literal
 
 REQUESTS = Counter("platform_http_requests_total", "HTTP requests", ["route", "method", "status"])
@@ -33,9 +33,13 @@ async def lifespan(app: FastAPI):
     log_path.parent.mkdir(parents=True, exist_ok=True)
     handler = RotatingFileHandler(log_path, maxBytes=2_000_000, backupCount=2)
     logger.addHandler(handler)
-    yield
-    logger.removeHandler(handler)
-    handler.close()
+    telemetry.configure("platform-api")
+    try:
+        yield
+    finally:
+        telemetry.shutdown()
+        logger.removeHandler(handler)
+        handler.close()
 
 
 app = FastAPI(title="AI Platform Reference – local knowledge workspace", lifespan=lifespan)
@@ -45,28 +49,37 @@ app = FastAPI(title="AI Platform Reference – local knowledge workspace", lifes
 async def observe(request: Request, call_next):
     started = time.perf_counter()
     status = 500
-    try:
-        response = await call_next(request)
-        status = response.status_code
-        return response
-    finally:
-        route = getattr(request.scope.get("route"), "path", "unmatched")
-        method = request.method if request.method in {"GET", "POST", "HEAD", "OPTIONS"} else "OTHER"
-        duration = time.perf_counter() - started
-        REQUESTS.labels(route, method, str(status)).inc()
-        LATENCY.labels(route).observe(duration)
-        if route != "/metrics":
-            logger.info(
-                json.dumps(
-                    {
-                        "event": "http_request",
-                        "route": route,
-                        "method": method,
-                        "status": status,
-                        "duration_seconds": round(duration, 6),
-                    }
-                )
+    with telemetry.span("http.request", parent=request.headers.get("traceparent")) as active:
+        try:
+            response = await call_next(request)
+            status = response.status_code
+            if telemetry.trace_id():
+                response.headers["X-Trace-ID"] = telemetry.trace_id()
+            return response
+        finally:
+            route = getattr(request.scope.get("route"), "path", "unmatched")
+            method = (
+                request.method if request.method in {"GET", "POST", "HEAD", "OPTIONS"} else "OTHER"
             )
+            duration = time.perf_counter() - started
+            telemetry.attributes(
+                active, **{"http.route": route, "http.method": method, "http.status_code": status}
+            )
+            REQUESTS.labels(route, method, str(status)).inc()
+            LATENCY.labels(route).observe(duration)
+            if route != "/metrics":
+                logger.info(
+                    json.dumps(
+                        {
+                            "event": "http_request",
+                            "route": route,
+                            "method": method,
+                            "status": status,
+                            "trace_id": telemetry.trace_id(),
+                            "duration_seconds": round(duration, 6),
+                        }
+                    )
+                )
 
 
 def database_ready() -> bool:

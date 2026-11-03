@@ -6,9 +6,10 @@ RUN pip install --no-cache-dir --only-binary=:all: --require-hashes -r requireme
     && addgroup -g 10001 platform \
     && adduser -D -H -u 10001 -G platform platform \
     && mkdir -p /var/log/platform && chown 10001:10001 /var/log/platform
-COPY apps/api/platform_api ./platform_api
-COPY docs/runbooks /app/runbooks
+COPY LICENSE NOTICE ./
+COPY apps/api/platform_api/*.py ./platform_api/
+COPY docs/runbooks/*.md /app/runbooks/
 COPY apps/demo-rag/frontend /app/frontend
-COPY apps/worker /app/worker
+COPY apps/worker/*.py /app/worker/
 USER 10001:10001
 CMD ["uvicorn", "platform_api.main:app", "--host", "0.0.0.0", "--port", "8000", "--no-access-log", "--limit-concurrency", "32"]

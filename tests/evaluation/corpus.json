@@ -1,0 +1,625 @@
+{
+  "version": "synthetic-operations-v1",
+  "sources": [
+    {
+      "id": "atlas",
+      "collection": "operations",
+      "title": "AtlasGate maintenance reference",
+      "text": "AtlasGate is a fictional service in the synthetic operations workspace. This reference covers maintenance. AtlasGate maintenance begins at 03:00 UTC every Tuesday. This is a synthetic fixture, not a production service specification."
+    },
+    {
+      "id": "birch",
+      "collection": "operations",
+      "title": "BirchStore retention reference",
+      "text": "BirchStore is a fictional service in the synthetic operations workspace. This reference covers retention. Worksheet entry 0 describes a fictional equipment label and administrative annotation. Worksheet entry 1 describes a fictional equipment label and administrative annotation. Worksheet entry 2 describes a fictional equipment label and administrative annotation. Worksheet entry 3 describes a fictional equipment label and administrative annotation. Worksheet entry 4 describes a fictional equipment label and administrative annotation. Worksheet entry 5 describes a fictional equipment label and administrative annotation. Worksheet entry 6 describes a fictional equipment label and administrative annotation. Worksheet entry 7 describes a fictional equipment label and administrative annotation. Worksheet entry 8 describes a fictional equipment label and administrative annotation. Worksheet entry 9 describes a fictional equipment label and administrative annotation. Worksheet entry 10 describes a fictional equipment label and administrative annotation. Worksheet entry 11 describes a fictional equipment label and administrative annotation. Worksheet entry 12 describes a fictional equipment label and administrative annotation. Worksheet entry 13 describes a fictional equipment label and administrative annotation. Worksheet entry 14 describes a fictional equipment label and administrative annotation. Worksheet entry 15 describes a fictional equipment label and administrative annotation. Worksheet entry 16 describes a fictional equipment label and administrative annotation. Worksheet entry 17 describes a fictional equipment label and administrative annotation. BirchStore keeps encrypted snapshots for fourteen days. This is a synthetic fixture, not a production service specification."
+    },
+    {
+      "id": "cobalt",
+      "collection": "operations",
+      "title": "CobaltRelay retry reference",
+      "text": "CobaltRelay is a fictional service in the synthetic operations workspace. This reference covers retry. CobaltRelay retries failed deliveries three times with a ten-second initial delay. This is a synthetic fixture, not a production service specification."
+    },
+    {
+      "id": "dune",
+      "collection": "operations",
+      "title": "DuneIndex embedding reference",
+      "text": "DuneIndex is a fictional service in the synthetic operations workspace. This reference covers embedding. DuneIndex uses 128-dimensional lexical hash vectors and requires reindexing when dimensions change. This is a synthetic fixture, not a production service specification."
+    },
+    {
+      "id": "ember",
+      "collection": "operations",
+      "title": "EmberQueue persistence reference",
+      "text": "EmberQueue is a fictional service in the synthetic operations workspace. This reference covers persistence. EmberQueue stores durable jobs in PostgreSQL; Redis only supplies wakeup notifications. This is a synthetic fixture, not a production service specification."
+    },
+    {
+      "id": "fjord",
+      "collection": "operations",
+      "title": "FjordAPI readiness reference",
+      "text": "FjordAPI is a fictional service in the synthetic operations workspace. This reference covers readiness. FjordAPI readiness returns 503 when the database is unavailable; liveness still returns 200. This is a synthetic fixture, not a production service specification."
+    },
+    {
+      "id": "garnet",
+      "collection": "operations",
+      "title": "GarnetWorker lease reference",
+      "text": "GarnetWorker is a fictional service in the synthetic operations workspace. This reference covers lease. GarnetWorker reserves each job for 240 seconds and stops its child after 180 seconds. This is a synthetic fixture, not a production service specification."
+    },
+    {
+      "id": "harbor",
+      "collection": "operations",
+      "title": "HarborProxy exposure reference",
+      "text": "HarborProxy is a fictional service in the synthetic operations workspace. This reference covers exposure. HarborProxy listens on loopback port 8181 and has no public listener. This is a synthetic fixture, not a production service specification."
+    },
+    {
+      "id": "iris",
+      "collection": "operations",
+      "title": "IrisCollection privacy reference",
+      "text": "IrisCollection is a fictional service in the synthetic operations workspace. This reference covers privacy. IrisCollection forbids external processing, including remote query embeddings and generated answers. This is a synthetic fixture, not a production service specification."
+    },
+    {
+      "id": "juniper",
+      "collection": "operations",
+      "title": "JuniperRestore recovery reference",
+      "text": "JuniperRestore is a fictional service in the synthetic operations workspace. This reference covers recovery. Worksheet entry 0 describes a fictional equipment label and administrative annotation. Worksheet entry 1 describes a fictional equipment label and administrative annotation. Worksheet entry 2 describes a fictional equipment label and administrative annotation. Worksheet entry 3 describes a fictional equipment label and administrative annotation. Worksheet entry 4 describes a fictional equipment label and administrative annotation. Worksheet entry 5 describes a fictional equipment label and administrative annotation. Worksheet entry 6 describes a fictional equipment label and administrative annotation. Worksheet entry 7 describes a fictional equipment label and administrative annotation. Worksheet entry 8 describes a fictional equipment label and administrative annotation. Worksheet entry 9 describes a fictional equipment label and administrative annotation. Worksheet entry 10 describes a fictional equipment label and administrative annotation. Worksheet entry 11 describes a fictional equipment label and administrative annotation. Worksheet entry 12 describes a fictional equipment label and administrative annotation. Worksheet entry 13 describes a fictional equipment label and administrative annotation. Worksheet entry 14 describes a fictional equipment label and administrative annotation. Worksheet entry 15 describes a fictional equipment label and administrative annotation. Worksheet entry 16 describes a fictional equipment label and administrative annotation. Worksheet entry 17 describes a fictional equipment label and administrative annotation. JuniperRestore compares source hashes and vectors in an isolated temporary database before reporting success. This is a synthetic fixture, not a production service specification."
+    },
+    {
+      "id": "kestrel",
+      "collection": "operations",
+      "title": "KestrelAlert alerting reference",
+      "text": "KestrelAlert is a fictional service in the synthetic operations workspace. This reference covers alerting. KestrelAlert fires after sixty seconds of database unavailability and clears after recovery. This is a synthetic fixture, not a production service specification."
+    },
+    {
+      "id": "lumen",
+      "collection": "operations",
+      "title": "LumenUpload uploads reference",
+      "text": "LumenUpload is a fictional service in the synthetic operations workspace. This reference covers uploads. LumenUpload accepts UTF-8 Markdown and text files up to two megabytes; scanned PDFs require OCR elsewhere. This is a synthetic fixture, not a production service specification."
+    },
+    {
+      "id": "alternate-atlas",
+      "collection": "alternate",
+      "title": "alternate-atlas alternate reference",
+      "text": "AtlasGate maintenance begins at 23:00 UTC every Friday."
+    },
+    {
+      "id": "cedar",
+      "collection": "alternate",
+      "title": "cedar alternate reference",
+      "text": "CedarVault uses recovery code AMBER-902."
+    }
+  ],
+  "evidence": [
+    {
+      "id": "atlas:fact",
+      "source": "atlas",
+      "quote": "AtlasGate maintenance begins at 03:00 UTC every Tuesday."
+    },
+    {
+      "id": "birch:fact",
+      "source": "birch",
+      "quote": "BirchStore keeps encrypted snapshots for fourteen days."
+    },
+    {
+      "id": "cobalt:fact",
+      "source": "cobalt",
+      "quote": "CobaltRelay retries failed deliveries three times with a ten-second initial delay."
+    },
+    {
+      "id": "dune:fact",
+      "source": "dune",
+      "quote": "DuneIndex uses 128-dimensional lexical hash vectors and requires reindexing when dimensions change."
+    },
+    {
+      "id": "ember:fact",
+      "source": "ember",
+      "quote": "EmberQueue stores durable jobs in PostgreSQL; Redis only supplies wakeup notifications."
+    },
+    {
+      "id": "fjord:fact",
+      "source": "fjord",
+      "quote": "FjordAPI readiness returns 503 when the database is unavailable; liveness still returns 200."
+    },
+    {
+      "id": "garnet:fact",
+      "source": "garnet",
+      "quote": "GarnetWorker reserves each job for 240 seconds and stops its child after 180 seconds."
+    },
+    {
+      "id": "harbor:fact",
+      "source": "harbor",
+      "quote": "HarborProxy listens on loopback port 8181 and has no public listener."
+    },
+    {
+      "id": "iris:fact",
+      "source": "iris",
+      "quote": "IrisCollection forbids external processing, including remote query embeddings and generated answers."
+    },
+    {
+      "id": "juniper:fact",
+      "source": "juniper",
+      "quote": "JuniperRestore compares source hashes and vectors in an isolated temporary database before reporting success."
+    },
+    {
+      "id": "kestrel:fact",
+      "source": "kestrel",
+      "quote": "KestrelAlert fires after sixty seconds of database unavailability and clears after recovery."
+    },
+    {
+      "id": "lumen:fact",
+      "source": "lumen",
+      "quote": "LumenUpload accepts UTF-8 Markdown and text files up to two megabytes; scanned PDFs require OCR elsewhere."
+    },
+    {
+      "id": "alternate-atlas:fact",
+      "source": "alternate-atlas",
+      "quote": "AtlasGate maintenance begins at 23:00 UTC every Friday."
+    },
+    {
+      "id": "cedar:fact",
+      "source": "cedar",
+      "quote": "CedarVault uses recovery code AMBER-902."
+    }
+  ],
+  "queries": [
+    {
+      "id": "atlas-q1",
+      "split": "calibration",
+      "category": "lexical",
+      "collection": "operations",
+      "question": "AtlasGate maintenance Tuesday time",
+      "relevant": [
+        "atlas:fact"
+      ]
+    },
+    {
+      "id": "atlas-q2",
+      "split": "regression",
+      "category": "question",
+      "collection": "operations",
+      "question": "When does the AtlasGate maintenance window begin?",
+      "relevant": [
+        "atlas:fact"
+      ]
+    },
+    {
+      "id": "atlas-q3",
+      "split": "calibration",
+      "category": "paraphrase",
+      "collection": "operations",
+      "question": "At which hour is AtlasGate serviced each week?",
+      "relevant": [
+        "atlas:fact"
+      ]
+    },
+    {
+      "id": "birch-q1",
+      "split": "regression",
+      "category": "lexical",
+      "collection": "operations",
+      "question": "BirchStore encrypted snapshots retention",
+      "relevant": [
+        "birch:fact"
+      ]
+    },
+    {
+      "id": "birch-q2",
+      "split": "calibration",
+      "category": "question",
+      "collection": "operations",
+      "question": "How long are BirchStore snapshots retained?",
+      "relevant": [
+        "birch:fact"
+      ]
+    },
+    {
+      "id": "birch-q3",
+      "split": "regression",
+      "category": "paraphrase",
+      "collection": "operations",
+      "question": "When are archived copies from BirchStore discarded?",
+      "relevant": [
+        "birch:fact"
+      ]
+    },
+    {
+      "id": "cobalt-q1",
+      "split": "calibration",
+      "category": "lexical",
+      "collection": "operations",
+      "question": "CobaltRelay retries delay failed deliveries",
+      "relevant": [
+        "cobalt:fact"
+      ]
+    },
+    {
+      "id": "cobalt-q2",
+      "split": "regression",
+      "category": "question",
+      "collection": "operations",
+      "question": "What is the initial delivery retry delay for CobaltRelay?",
+      "relevant": [
+        "cobalt:fact"
+      ]
+    },
+    {
+      "id": "cobalt-q3",
+      "split": "calibration",
+      "category": "paraphrase",
+      "collection": "operations",
+      "question": "How often does CobaltRelay attempt delivery again?",
+      "relevant": [
+        "cobalt:fact"
+      ]
+    },
+    {
+      "id": "dune-q1",
+      "split": "regression",
+      "category": "lexical",
+      "collection": "operations",
+      "question": "DuneIndex vector dimensions reindexing",
+      "relevant": [
+        "dune:fact"
+      ]
+    },
+    {
+      "id": "dune-q2",
+      "split": "calibration",
+      "category": "question",
+      "collection": "operations",
+      "question": "Which vector dimensions does DuneIndex use?",
+      "relevant": [
+        "dune:fact"
+      ]
+    },
+    {
+      "id": "dune-q3",
+      "split": "regression",
+      "category": "paraphrase",
+      "collection": "operations",
+      "question": "Can the DuneIndex representation change without rebuilding the index?",
+      "relevant": [
+        "dune:fact"
+      ]
+    },
+    {
+      "id": "ember-q1",
+      "split": "calibration",
+      "category": "lexical",
+      "collection": "operations",
+      "question": "EmberQueue durable jobs PostgreSQL Redis",
+      "relevant": [
+        "ember:fact"
+      ]
+    },
+    {
+      "id": "ember-q2",
+      "split": "regression",
+      "category": "question",
+      "collection": "operations",
+      "question": "Where are EmberQueue jobs persisted?",
+      "relevant": [
+        "ember:fact"
+      ]
+    },
+    {
+      "id": "ember-q3",
+      "split": "calibration",
+      "category": "multi-evidence",
+      "collection": "operations",
+      "question": "Where are EmberQueue jobs stored and how long does GarnetWorker reserve a job?",
+      "relevant": [
+        "ember:fact",
+        "garnet:fact"
+      ]
+    },
+    {
+      "id": "fjord-q1",
+      "split": "regression",
+      "category": "lexical",
+      "collection": "operations",
+      "question": "FjordAPI readiness database unavailable status",
+      "relevant": [
+        "fjord:fact"
+      ]
+    },
+    {
+      "id": "fjord-q2",
+      "split": "calibration",
+      "category": "question",
+      "collection": "operations",
+      "question": "What status does FjordAPI readiness return during a database outage?",
+      "relevant": [
+        "fjord:fact"
+      ]
+    },
+    {
+      "id": "fjord-q3",
+      "split": "regression",
+      "category": "paraphrase",
+      "collection": "operations",
+      "question": "Does FjordAPI remain alive if its storage dependency fails?",
+      "relevant": [
+        "fjord:fact"
+      ]
+    },
+    {
+      "id": "garnet-q1",
+      "split": "calibration",
+      "category": "lexical",
+      "collection": "operations",
+      "question": "GarnetWorker job lease child timeout seconds",
+      "relevant": [
+        "garnet:fact"
+      ]
+    },
+    {
+      "id": "garnet-q2",
+      "split": "regression",
+      "category": "question",
+      "collection": "operations",
+      "question": "How long is the GarnetWorker job reservation?",
+      "relevant": [
+        "garnet:fact"
+      ]
+    },
+    {
+      "id": "garnet-q3",
+      "split": "calibration",
+      "category": "paraphrase",
+      "collection": "operations",
+      "question": "When does GarnetWorker terminate an overlong child process?",
+      "relevant": [
+        "garnet:fact"
+      ]
+    },
+    {
+      "id": "harbor-q1",
+      "split": "regression",
+      "category": "lexical",
+      "collection": "operations",
+      "question": "HarborProxy loopback listener port",
+      "relevant": [
+        "harbor:fact"
+      ]
+    },
+    {
+      "id": "harbor-q2",
+      "split": "calibration",
+      "category": "question",
+      "collection": "operations",
+      "question": "Which port does HarborProxy bind?",
+      "relevant": [
+        "harbor:fact"
+      ]
+    },
+    {
+      "id": "harbor-q3",
+      "split": "regression",
+      "category": "paraphrase",
+      "collection": "operations",
+      "question": "Can another host reach HarborProxy directly?",
+      "relevant": [
+        "harbor:fact"
+      ]
+    },
+    {
+      "id": "iris-q1",
+      "split": "calibration",
+      "category": "lexical",
+      "collection": "operations",
+      "question": "IrisCollection external processing embeddings privacy",
+      "relevant": [
+        "iris:fact"
+      ]
+    },
+    {
+      "id": "iris-q2",
+      "split": "regression",
+      "category": "question",
+      "collection": "operations",
+      "question": "May IrisCollection send query embeddings to a remote provider?",
+      "relevant": [
+        "iris:fact"
+      ]
+    },
+    {
+      "id": "iris-q3",
+      "split": "calibration",
+      "category": "paraphrase",
+      "collection": "operations",
+      "question": "Can IrisCollection documents leave the machine for an answer?",
+      "relevant": [
+        "iris:fact"
+      ]
+    },
+    {
+      "id": "juniper-q1",
+      "split": "regression",
+      "category": "lexical",
+      "collection": "operations",
+      "question": "JuniperRestore source hashes vectors verification",
+      "relevant": [
+        "juniper:fact"
+      ]
+    },
+    {
+      "id": "juniper-q2",
+      "split": "calibration",
+      "category": "question",
+      "collection": "operations",
+      "question": "What does JuniperRestore compare before reporting success?",
+      "relevant": [
+        "juniper:fact"
+      ]
+    },
+    {
+      "id": "juniper-q3",
+      "split": "regression",
+      "category": "multi-evidence",
+      "collection": "operations",
+      "question": "What must JuniperRestore compare and how long does BirchStore retain snapshots?",
+      "relevant": [
+        "juniper:fact",
+        "birch:fact"
+      ]
+    },
+    {
+      "id": "kestrel-q1",
+      "split": "calibration",
+      "category": "lexical",
+      "collection": "operations",
+      "question": "KestrelAlert database unavailable sixty seconds",
+      "relevant": [
+        "kestrel:fact"
+      ]
+    },
+    {
+      "id": "kestrel-q2",
+      "split": "regression",
+      "category": "question",
+      "collection": "operations",
+      "question": "When does KestrelAlert fire?",
+      "relevant": [
+        "kestrel:fact"
+      ]
+    },
+    {
+      "id": "kestrel-q3",
+      "split": "calibration",
+      "category": "paraphrase",
+      "collection": "operations",
+      "question": "Does the KestrelAlert notification remain active after the database recovers?",
+      "relevant": [
+        "kestrel:fact"
+      ]
+    },
+    {
+      "id": "lumen-q1",
+      "split": "regression",
+      "category": "lexical",
+      "collection": "operations",
+      "question": "LumenUpload UTF-8 Markdown upload limit",
+      "relevant": [
+        "lumen:fact"
+      ]
+    },
+    {
+      "id": "lumen-q2",
+      "split": "calibration",
+      "category": "question",
+      "collection": "operations",
+      "question": "How large may a LumenUpload text file be?",
+      "relevant": [
+        "lumen:fact"
+      ]
+    },
+    {
+      "id": "lumen-q3",
+      "split": "regression",
+      "category": "paraphrase",
+      "collection": "operations",
+      "question": "Can LumenUpload extract words from an image-only book?",
+      "relevant": [
+        "lumen:fact"
+      ]
+    },
+    {
+      "id": "unknown-1",
+      "split": "calibration",
+      "category": "unanswerable",
+      "collection": "operations",
+      "question": "What is the AtlasGate administrator password?",
+      "relevant": []
+    },
+    {
+      "id": "unknown-2",
+      "split": "regression",
+      "category": "unanswerable",
+      "collection": "operations",
+      "question": "Which GPU accelerator powers DuneIndex?",
+      "relevant": []
+    },
+    {
+      "id": "unknown-3",
+      "split": "calibration",
+      "category": "unanswerable",
+      "collection": "operations",
+      "question": "Who owns the BirchStore billing account?",
+      "relevant": []
+    },
+    {
+      "id": "unknown-4",
+      "split": "regression",
+      "category": "unanswerable",
+      "collection": "operations",
+      "question": "What is the HarborProxy public domain name?",
+      "relevant": []
+    },
+    {
+      "id": "unknown-5",
+      "split": "calibration",
+      "category": "unanswerable",
+      "collection": "operations",
+      "question": "What is the nutritional composition of lunar cheese?",
+      "relevant": []
+    },
+    {
+      "id": "unknown-6",
+      "split": "regression",
+      "category": "unanswerable",
+      "collection": "operations",
+      "question": "How many satellites orbit the fictional planet Veloria?",
+      "relevant": []
+    },
+    {
+      "id": "unknown-7",
+      "split": "calibration",
+      "category": "unanswerable",
+      "collection": "operations",
+      "question": "Which composer wrote the lost symphony of Zandoria?",
+      "relevant": []
+    },
+    {
+      "id": "unknown-8",
+      "split": "regression",
+      "category": "unanswerable",
+      "collection": "operations",
+      "question": "What depth is the imaginary Qorvik ocean?",
+      "relevant": []
+    },
+    {
+      "id": "collection-trap-1",
+      "split": "calibration",
+      "category": "collection-trap",
+      "collection": "alternate",
+      "question": "When does AtlasGate maintenance begin?",
+      "relevant": [
+        "alternate-atlas:fact"
+      ]
+    },
+    {
+      "id": "collection-trap-2",
+      "split": "regression",
+      "category": "collection-trap",
+      "collection": "alternate",
+      "question": "What is the CedarVault recovery code?",
+      "relevant": [
+        "cedar:fact"
+      ]
+    },
+    {
+      "id": "collection-trap-3",
+      "split": "calibration",
+      "category": "collection-trap",
+      "collection": "operations",
+      "question": "What is the CedarVault recovery code?",
+      "relevant": []
+    },
+    {
+      "id": "collection-trap-4",
+      "split": "regression",
+      "category": "collection-trap",
+      "collection": "alternate",
+      "question": "Where are EmberQueue durable jobs stored?",
+      "relevant": []
+    }
+  ]
+}

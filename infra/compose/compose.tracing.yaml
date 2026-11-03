@@ -1,0 +1,29 @@
+# Optional: compose.sh includes this overlay only with PLATFORM_TRACING=1.
+services:
+  api:
+    environment:
+      PLATFORM_TRACE_ENDPOINT: http://tempo:4318/v1/traces
+  worker:
+    environment:
+      PLATFORM_TRACE_ENDPOINT: http://tempo:4318/v1/traces
+    networks:
+      telemetry: {}
+  tempo:
+    image: grafana/tempo:2.8.2
+    command: [-config.file=/etc/tempo.yml]
+    user: '10001:10001'
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 384m
+    cpus: 0.5
+    pids_limit: 128
+    tmpfs: ['/tmp:size=128m,mode=1777']
+    volumes: ['../../observability/tempo/tempo.yml:/etc/tempo.yml:ro']
+    networks: [telemetry]
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 5m
+        max-file: '2'

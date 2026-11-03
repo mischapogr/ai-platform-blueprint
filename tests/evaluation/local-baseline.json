@@ -1,0 +1,163 @@
+{
+  "time_utc": "2026-11-03T19:13:15.476759+00:00",
+  "revision": "574e97a3bf816ab46bfdf0149315e185d8cfdae3",
+  "input_sha256": "1354ce0b40c9ba7118343a75be937c16cb9a609da10d5e9fd65c6dc39bd5a2fc",
+  "runtime": {
+    "version": "0.23.2"
+  },
+  "host": {
+    "architecture": "x86_64",
+    "cpu_count": 8,
+    "inference_threads": 4,
+    "gpu_layers": 0,
+    "memory_total_mib": 31009.73828125,
+    "sampled_peak_sum_rss_mib": 3566.88671875,
+    "memory_sample_count": 1271
+  },
+  "models": {
+    "embedding_model": {
+      "model": "nomic-embed-text:latest",
+      "digest": "0a109f422b47e3a30ba2b10eca18548e944e8a23073ee3f3e947efcf3c45e59f",
+      "dimensions": 768,
+      "profile": "nomic-v1"
+    },
+    "generation_model": {
+      "model": "llama3.2:3b",
+      "digest": "a80c4f17acd55265feec403c7aef86be0c25983ab279d83f3bcd3abbcb5b8b72",
+      "context_length": 8192
+    }
+  },
+  "retrieval": {
+    "offline": {
+      "summary": {
+        "calibration": {
+          "queries": 24,
+          "answerable": 19,
+          "unanswerable": 5,
+          "1": {
+            "recall": 0.815789,
+            "mrr": 0.842105,
+            "false_positive_rate": 1.0
+          },
+          "3": {
+            "recall": 0.894737,
+            "mrr": 0.868421,
+            "false_positive_rate": 1.0
+          },
+          "5": {
+            "recall": 0.894737,
+            "mrr": 0.868421,
+            "false_positive_rate": 1.0
+          }
+        },
+        "regression": {
+          "queries": 24,
+          "answerable": 19,
+          "unanswerable": 5,
+          "1": {
+            "recall": 0.631579,
+            "mrr": 0.631579,
+            "false_positive_rate": 0.8
+          },
+          "3": {
+            "recall": 0.789474,
+            "mrr": 0.710526,
+            "false_positive_rate": 0.8
+          },
+          "5": {
+            "recall": 0.815789,
+            "mrr": 0.721053,
+            "false_positive_rate": 0.8
+          }
+        }
+      },
+      "leakage_count": 0
+    },
+    "semantic": {
+      "summary": {
+        "calibration": {
+          "queries": 24,
+          "answerable": 19,
+          "unanswerable": 5,
+          "1": {
+            "recall": 0.815789,
+            "mrr": 0.842105,
+            "false_positive_rate": 1.0
+          },
+          "3": {
+            "recall": 0.894737,
+            "mrr": 0.868421,
+            "false_positive_rate": 1.0
+          },
+          "5": {
+            "recall": 0.947368,
+            "mrr": 0.878947,
+            "false_positive_rate": 1.0
+          }
+        },
+        "regression": {
+          "queries": 24,
+          "answerable": 19,
+          "unanswerable": 5,
+          "1": {
+            "recall": 0.736842,
+            "mrr": 0.736842,
+            "false_positive_rate": 1.0
+          },
+          "3": {
+            "recall": 0.842105,
+            "mrr": 0.780702,
+            "false_positive_rate": 1.0
+          },
+          "5": {
+            "recall": 0.921053,
+            "mrr": 0.804386,
+            "false_positive_rate": 1.0
+          }
+        }
+      },
+      "leakage_count": 0
+    }
+  },
+  "answers": {
+    "cases": 16,
+    "automatic_check_failures": [
+      "multiple-sources/fixed/expected_fact_coverage",
+      "multiple-sources/retrieved/expected_fact_coverage",
+      "empty-evidence/fixed/citation_targets_valid",
+      "empty-evidence/retrieved/citation_targets_valid",
+      "source-instruction/fixed/supporting_sources_cited",
+      "source-instruction/fixed/injection_marker_absent",
+      "source-instruction/fixed/expected_fact_coverage",
+      "source-instruction/retrieved/supporting_sources_cited",
+      "source-instruction/retrieved/injection_marker_absent",
+      "source-instruction/retrieved/expected_fact_coverage",
+      "conflicting-evidence/fixed/supporting_sources_cited",
+      "conflicting-evidence/fixed/abstention_correct",
+      "conflicting-evidence/retrieved/supporting_sources_cited",
+      "conflicting-evidence/retrieved/abstention_correct",
+      "irrelevant-evidence/fixed/abstention_correct",
+      "irrelevant-evidence/retrieved/abstention_correct"
+    ],
+    "human_review": "pending; no automated groundedness claim",
+    "prompt_version": "reference-v1",
+    "case_version": "synthetic-answer-v1"
+  },
+  "usage": [
+    {
+      "model": "nomic-embed-text:latest",
+      "operation": "ollama.embedding",
+      "calls": 81,
+      "input_tokens": 2219,
+      "output_tokens": 0
+    },
+    {
+      "model": "llama3.2:3b",
+      "operation": "ollama.chat",
+      "calls": 17,
+      "input_tokens": 2171,
+      "output_tokens": 929
+    }
+  ],
+  "scope": "Synthetic CPU qualification; no live OpenAI call, no production or human-verified groundedness claim."
+}

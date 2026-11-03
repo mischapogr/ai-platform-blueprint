@@ -47,9 +47,16 @@ async function refreshCollections() { state.collections = await api('/collection
 async function selectCollection(id) { if (state.busy) { notice('Wait for the current answer before changing collections.'); return; } if (id === state.selected) return; state.selected = id; $('external-consent').checked = false; clearChat(); renderCollections(); await loadSources().catch(e => notice(e.message)); }
 function updateMode() {
   const provider = $('chat-provider').value, c = selected(), general = $('chat-mode').value === 'chat';
-  $('chat-model').hidden = provider !== 'openai';
+  $('chat-model').hidden = provider === 'offline';
+  const available = (provider === 'ollama' ? state.status?.local_models : state.status?.models) || [];
+  const modelKey = provider + '|' + available.join(',');
+  if ($('chat-model').dataset.modelKey !== modelKey) {
+    $('chat-model').replaceChildren();
+    for (const model of available) { const option = el('option', model); option.value = model; $('chat-model').append(option); }
+    $('chat-model').dataset.modelKey = modelKey;
+  }
   $('consent-row').hidden = !(provider === 'openai' || (!general && c?.embedding_provider === 'openai'));
-  $('mode-note').textContent = provider === 'openai' ? 'OpenAI generates answers. Selected context leaves this machine.' : c?.embedding_provider === 'openai' && !general ? 'Retrieval uses OpenAI embeddings; answers show retrieved passages.' : 'Local search returns source passages without a model call.';
+  $('mode-note').textContent = provider === 'openai' ? 'OpenAI generates answers. Selected context leaves this machine.' : provider === 'ollama' ? 'A local Ollama model generates the answer. External retrieval still requires consent if enabled.' : c?.embedding_provider === 'openai' && !general ? 'Retrieval uses OpenAI embeddings; answers show retrieved passages.' : c?.embedding_provider === 'ollama' && !general ? 'Retrieval uses local Ollama embeddings; answers show retrieved passages.' : 'Local search returns source passages without a model call.';
   if (general) { $('active-collection').textContent = 'General chat · no sources attached'; $('collection-policy').textContent = 'No collection context'; }
   else { $('active-collection').textContent = c?.name || 'No collection selected'; $('collection-policy').textContent = c?.allow_external ? 'External processing allowed' : 'Local only'; }
 }
@@ -91,15 +98,15 @@ function openSource() {
   if (!selected()) { openCollection(); return; }
   $('source-form').reset(); $('source-error').textContent = ''; sourceFields();
   $('source-collection-label').textContent = 'Adding to ' + selected().name;
-  $('source-processing-note').textContent = selected().embedding_provider === 'openai' ? 'This collection sends extracted text to OpenAI to build semantic embeddings.' : 'Text extraction and indexing stay on this machine. Local search uses lexical hashing.';
+  $('source-processing-note').textContent = selected().embedding_provider === 'openai' ? 'This collection sends extracted text to OpenAI to build semantic embeddings.' : selected().embedding_provider === 'ollama' ? 'Text extraction and semantic indexing use the configured local Ollama runtime.' : 'Text extraction and indexing stay on this machine. Local search uses lexical hashing.';
   $('source-dialog').showModal();
 }
 function addMessage(role, text, data) {
   $('welcome').hidden = true;
   const item = el('article', undefined, 'message ' + role); item.append(el('div', text, 'message-body'));
   if (data) {
-    const tokens = data.usage ? ' · ' + data.usage.input_tokens + ' input / ' + data.usage.output_tokens + ' output tokens' : '';
-    item.append(el('div', (data.mode === 'openai' ? $('chat-model').value : data.mode === 'no-match' ? 'No supporting sources' : 'Local source search') + tokens, 'message-meta'));
+    const tokens = data.usage ? ' · ' + (data.usage.input_tokens ?? 'unreported') + ' input / ' + (data.usage.output_tokens ?? 'unreported') + ' output tokens' : '';
+    item.append(el('div', (['openai', 'ollama'].includes(data.mode) ? $('chat-model').value : data.mode === 'no-match' ? 'No supporting sources' : 'Local source search') + tokens, 'message-meta'));
     if (data.sources.length) {
       const references = el('details', undefined, 'references'); references.append(el('summary', data.sources.length + ' retrieved references · inspect passages'));
       for (const [i, p] of data.sources.entries()) { const button = el('button', '[' + (i + 1) + '] ' + p.title, 'reference'); button.append(el('small', (p.page ? 'Page ' + p.page + ' · ' : '') + 'Similarity ' + Math.round(p.score * 100) + '%')); button.addEventListener('click', () => showPassages(p.title, [p])); references.append(button); }
@@ -111,14 +118,15 @@ function addMessage(role, text, data) {
 async function loadUsage() {
   const rows = await api('/usage'); $('usage').replaceChildren();
   if (!rows.length) $('usage').append(el('p', 'No recorded provider calls yet. Local lexical search uses no API tokens.', 'help'));
-  for (const row of rows) { const item = el('div', undefined, 'usage-row'); item.append(el('strong', row.model + ' · ' + row.operation), el('span', row.calls + ' calls'), el('span', row.input_tokens + ' input'), el('span', row.output_tokens + ' output')); $('usage').append(item); }
+  for (const row of rows) { const item = el('div', undefined, 'usage-row'); item.append(el('strong', row.model + ' · ' + row.operation), el('span', row.calls + ' calls'), el('span', row.input_tokens === null ? 'Input tokens not reported' : row.input_tokens + ' reported input'), el('span', row.output_tokens === null ? 'Output tokens not reported' : row.output_tokens + ' reported output')); $('usage').append(item); }
 }
 async function boot() {
   state.status = await api('/status'); state.unlocked = true; $('unlock').hidden = true; $('workspace').hidden = false;
-  $('provider-status').textContent = state.status.provider_configured ? 'OpenAI configured' : 'Offline mode';
-  $('connection-detail').textContent = state.status.provider_configured ? 'A local API key is configured. Model access and credit availability are checked when you send a request.' : 'No API key configured. Local source search is ready; model-backed chat will be available after setup.';
+  $('provider-status').textContent = state.status.provider_configured ? 'OpenAI configured' : state.status.local_provider_configured ? 'Ollama configured' : 'Offline mode';
+  $('connection-detail').textContent = state.status.provider_configured ? 'A local API key is configured. Model access and credit availability are checked when you send a request.' : state.status.local_provider_configured ? 'Ollama is configured locally. Installed models are checked when you create an index or request an answer.' : 'No model provider configured. Local lexical search is ready.';
   const option = $('chat-provider').querySelector('[value=openai]'); option.disabled = !state.status.provider_configured;
-  $('chat-model').replaceChildren(); for (const model of state.status.models) { const item = el('option', model); item.value = model; $('chat-model').append(item); }
+  $('chat-provider').querySelector('[value=ollama]').disabled = !state.status.local_provider_configured;
+  $('embedding-method').querySelector('[value=ollama]').disabled = !state.status.local_provider_configured;
   await refreshCollections(); await loadSources();
 }
 $('unlock-form').addEventListener('submit', async event => { event.preventDefault(); const button = event.submitter || event.currentTarget.querySelector("button[type=submit]"); button.disabled = true; $('unlock-error').textContent = ''; try { await api('/session', {method: 'POST', ...json({token: $('access-key').value})}); $('access-key').value = ''; await boot(); } catch (e) { $('unlock-error').textContent = e.message; } finally { button.disabled = false; } });

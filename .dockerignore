@@ -1,4 +1,6 @@
 **
+!LICENSE
+!NOTICE
 !apps
 !apps/api
 !apps/api/**
@@ -11,8 +13,12 @@
 !observability/loki/Dockerfile
 !observability/alloy
 !observability/alloy/Dockerfile
+!observability/ollama
+!observability/ollama/Dockerfile
 !apps/worker
 !apps/worker/**
 !apps/demo-rag
 !apps/demo-rag/frontend
 !apps/demo-rag/frontend/**
+**/__pycache__
+**/*.pyc

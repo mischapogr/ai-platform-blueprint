@@ -1,0 +1,69 @@
+{
+  "corpus_sha256": "1aa2eddc642b9a0a863b0e7bfcc409bd2382a06f1db9e633acad90081e196aef",
+  "corpus_version": "synthetic-operations-v1",
+  "protocol": "evidence-span-v1;macro-recall;first-relevant-mrr;top5-prefix;stable-uuid-ties",
+  "configuration": {
+    "provider": "offline",
+    "model": "hash-v1",
+    "dimensions": 128,
+    "chunk_characters": 1200,
+    "overlap_characters": 150,
+    "score_cutoff": 0.1,
+    "k": [
+      1,
+      3,
+      5
+    ]
+  },
+  "summary": {
+    "calibration": {
+      "queries": 24,
+      "answerable": 19,
+      "unanswerable": 5,
+      "1": {
+        "recall": 0.815789,
+        "mrr": 0.842105,
+        "false_positive_rate": 1.0
+      },
+      "3": {
+        "recall": 0.894737,
+        "mrr": 0.868421,
+        "false_positive_rate": 1.0
+      },
+      "5": {
+        "recall": 0.894737,
+        "mrr": 0.868421,
+        "false_positive_rate": 1.0
+      }
+    },
+    "regression": {
+      "queries": 24,
+      "answerable": 19,
+      "unanswerable": 5,
+      "1": {
+        "recall": 0.631579,
+        "mrr": 0.631579,
+        "false_positive_rate": 0.8
+      },
+      "3": {
+        "recall": 0.789474,
+        "mrr": 0.710526,
+        "false_positive_rate": 0.8
+      },
+      "5": {
+        "recall": 0.815789,
+        "mrr": 0.721053,
+        "false_positive_rate": 0.8
+      }
+    }
+  },
+  "execution": {
+    "time_utc": "2026-11-03T18:16:09.310137+00:00",
+    "revision": "574e97a3bf816ab46bfdf0149315e185d8cfdae3",
+    "application_sha256": "e6779009374b759e660eac36b61458bbdfec31450b678bf4e976c9fc3b325a1c",
+    "benchmark_sha256": "b4607bdfe2542c3b80d69ea63107b5d672c07c2bf4f742bfd505fab39f37a629",
+    "image_id": "sha256:178f5049adcf0fcf806ec762939441f522cfc0e3df298e294d1584874273b3bf",
+    "database_image_id": "sha256:4c0c0efbd40e8ff42363074292654a7831cac506fc01a1c89627f1b1040ba341",
+    "scope": "local disposable PostgreSQL; direct ingestion/retrieval; no HTTP/worker"
+  }
+}

@@ -89,3 +89,27 @@ def test_openai_adapter_sends_bounded_stateless_request(monkeypatch):
     assert "tools" not in captured
     assert "untrusted data" in captured["instructions"]
     assert answer == "Supported answer [1]" and usage["input_tokens"] == 12
+
+
+def test_configured_tls_origin_and_secure_cookie(monkeypatch, tmp_path):
+    token = tmp_path / "token"
+    token.write_text("synthetic-tls-workspace")
+    monkeypatch.setenv("WORKSPACE_TOKEN_FILE", str(token))
+    monkeypatch.setenv("REQUEST_LOG", str(tmp_path / "requests.jsonl"))
+    monkeypatch.setenv("WORKSPACE_ALLOWED_ORIGINS", "https://localhost:18443")
+    monkeypatch.setenv("WORKSPACE_COOKIE_SECURE", "1")
+    with TestClient(main.app, base_url="https://localhost:18443") as client:
+        assert (
+            client.post(
+                "/api/session",
+                headers={"Origin": "https://untrusted.example"},
+                json={"token": token.read_text()},
+            ).status_code
+            == 403
+        )
+        response = client.post(
+            "/api/session",
+            headers={"Origin": "https://localhost:18443"},
+            json={"token": token.read_text()},
+        )
+        assert response.status_code == 200 and "; Secure" in response.headers["set-cookie"]

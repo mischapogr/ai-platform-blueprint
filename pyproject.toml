@@ -17,6 +17,8 @@ dependencies = [
   "pypdf>=6.21,<8",
   "beautifulsoup4>=4.13,<5",
   "python-multipart>=0.0.22,<1",
+  "opentelemetry-sdk>=1.44,<2",
+  "opentelemetry-exporter-otlp-proto-http>=1.44,<2",
 ]
 
 [dependency-groups]

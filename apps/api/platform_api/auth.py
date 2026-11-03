@@ -17,7 +17,14 @@ def secret():
 
 def same_origin(request: Request):
     origin = request.headers.get("origin")
-    if origin and origin not in {"http://127.0.0.1:8080", "http://localhost:8080"}:
+    allowed = {
+        value.strip()
+        for value in os.getenv(
+            "WORKSPACE_ALLOWED_ORIGINS", "http://127.0.0.1:8080,http://localhost:8080"
+        ).split(",")
+        if value.strip()
+    }
+    if origin and origin not in allowed:
         raise HTTPException(403, "Origin not allowed")
 
 

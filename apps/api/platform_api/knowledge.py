@@ -1,19 +1,21 @@
 """Authenticated collection-scoped knowledge and model API."""
 
 import hmac
+import os
 import uuid
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, Response, UploadFile
 from pydantic import BaseModel, Field, field_validator
 
-from . import db, jobs, models
+from . import db, jobs, local_models, models, telemetry
 from .auth import issue_session, require_session, same_origin, secret
 from .ingestion import MAX_BYTES
 from .retrieval import embed, vector_literal
 
 session_router = APIRouter(prefix="/api")
 router = APIRouter(prefix="/api", dependencies=[Depends(require_session)])
+RETRIEVAL_SCORE_CUTOFF = 0.1
 
 
 @session_router.post("/session")
@@ -30,6 +32,7 @@ async def login(request: Request, response: Response):
         "platform_session",
         issue_session(),
         httponly=True,
+        secure=os.getenv("WORKSPACE_COOKIE_SECURE", "0") == "1",
         samesite="strict",
         max_age=8 * 3600,
         path="/api",
@@ -50,6 +53,8 @@ def status():
     return {
         "provider_configured": models.key_available(),
         "models": models.chat_models(),
+        "local_provider_configured": local_models.configured(),
+        "local_models": local_models.chat_models() if local_models.configured() else [],
         "credit_balance": None,
         "default_provider": "offline",
     }
@@ -58,7 +63,7 @@ def status():
 class CollectionInput(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     description: str = Field(default="", max_length=500)
-    embedding_provider: Literal["offline", "openai"] = "offline"
+    embedding_provider: Literal["offline", "openai", "ollama"] = "offline"
     allow_external: bool = False
 
     @field_validator("name")
@@ -90,10 +95,18 @@ def create_collection(payload: CollectionInput):
     collection_id = str(uuid.uuid4())
     model = "hash-v1" if payload.embedding_provider == "offline" else "text-embedding-3-small"
     dims = 128 if payload.embedding_provider == "offline" else 1536
+    local = {}
+    if payload.embedding_provider == "ollama":
+        try:
+            local = local_models.embedding_config()
+        except models.ModelError as error:
+            raise HTTPException(400, str(error)) from None
+        model, dims = local["model"], local["dimensions"]
     with db.connect() as conn:
         return conn.execute(
             "INSERT INTO kb_collections (id,name,description,embedding_provider,"
-            "embedding_model,dimensions,allow_external) VALUES (%s,%s,%s,%s,%s,%s,%s) "
+            "embedding_model,dimensions,allow_external,embedding_endpoint,embedding_digest,"
+            "embedding_profile) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) "
             "RETURNING *",
             (
                 collection_id,
@@ -103,6 +116,9 @@ def create_collection(payload: CollectionInput):
                 model,
                 dims,
                 payload.allow_external,
+                local.get("endpoint"),
+                local.get("digest"),
+                local.get("profile", "plain"),
             ),
         ).fetchone()
 
@@ -207,7 +223,7 @@ def retry_source(source_id: uuid.UUID):
             raise HTTPException(409, "Only failed jobs can be retried")
         conn.execute(
             "UPDATE kb_jobs SET status='queued',attempts=0,error_code=NULL,"
-            "available_at=now(),lease_until=NULL WHERE source_id=%s",
+            "available_at=now(),lease_until=NULL,attempt_token=NULL WHERE source_id=%s",
             (source_id,),
         )
         conn.execute(
@@ -236,7 +252,7 @@ class ChatInput(BaseModel):
     question: str = Field(min_length=1, max_length=2000)
     collection_id: uuid.UUID | None = None
     mode: Literal["knowledge", "chat"] = "knowledge"
-    provider: Literal["offline", "openai"] = "offline"
+    provider: Literal["offline", "openai", "ollama"] = "offline"
     model: str = Field(default="gpt-6-luna", max_length=100)
     external_consent: bool = False
     history: list[Message] = Field(default_factory=list, max_length=8)
@@ -249,17 +265,18 @@ class ChatInput(BaseModel):
         return value
 
 
+@telemetry.traced("retrieval.query")
 def retrieve(question, collection, top_k):
-    vector = vector_literal(models.embeddings([question], collection)[0])
+    vector = vector_literal(models.embeddings([question], collection, purpose="query")[0])
     with db.connect() as conn:
         return conn.execute(
             "WITH scoped AS MATERIALIZED (SELECT ch.*,s.title FROM kb_chunks ch "
             "JOIN kb_sources s ON s.id=ch.source_id "
             "WHERE ch.collection_id=%s AND s.status='ready') "
             "SELECT id,source_id,title,content,page,locator,1-(embedding <=> %s::vector) AS score "
-            "FROM scoped WHERE 1-(embedding <=> %s::vector)>=0.1 "
+            "FROM scoped WHERE 1-(embedding <=> %s::vector)>=%s "
             "ORDER BY embedding <=> %s::vector,id LIMIT %s",
-            (collection["id"], vector, vector, vector, top_k),
+            (collection["id"], vector, vector, RETRIEVAL_SCORE_CUTOFF, vector, top_k),
         ).fetchall()
 
 
@@ -282,7 +299,7 @@ def chat(payload: ChatInput):
         bool(
             collection
             and payload.mode == "knowledge"
-            and collection["embedding_provider"] == "openai"
+            and collection["embedding_provider"] in {"openai", "ollama"}
         )
     )
     try:
@@ -306,7 +323,7 @@ def chat(payload: ChatInput):
             answer = "\n\n".join(f"[{i}] {p['content']}" for i, p in enumerate(passages, 1))
             if payload.mode == "chat":
                 answer = (
-                    "Choose OpenAI for general chat, or select Knowledge mode to search locally."
+                    "Choose a model provider for general chat, or select Knowledge mode to search."
                 )
             usage = None
         else:
@@ -317,13 +334,15 @@ def chat(payload: ChatInput):
                 passages,
                 target,
                 payload.model,
+                provider=payload.provider,
+                knowledge=payload.mode == "knowledge",
             )
         return {
             "answer": answer,
             "sources": passages,
             "usage": usage,
-            "mode": "offline-extractive" if payload.provider == "offline" else "openai",
-            "provider_calls": int(payload.provider == "openai") + embedding_calls,
+            "mode": "offline-extractive" if payload.provider == "offline" else payload.provider,
+            "provider_calls": int(payload.provider != "offline") + embedding_calls,
         }
     except models.ModelError as error:
         raise HTTPException(502, str(error)) from None

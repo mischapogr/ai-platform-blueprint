@@ -3,6 +3,8 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 ./scripts/compose.sh up --detach --wait --wait-timeout 90 db redis
+# Stop old children before upgrading attempt-ownership rules or application code.
+./scripts/compose.sh stop worker
 ./scripts/migrate.sh
 ./scripts/compose.sh up --detach --build --wait --wait-timeout 180
 .venv/bin/python scripts/seed.py

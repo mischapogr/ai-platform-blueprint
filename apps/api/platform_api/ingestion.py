@@ -15,6 +15,8 @@ MAX_BYTES = 10 * 1024 * 1024
 MAX_WEB_BYTES = 2 * 1024 * 1024
 MAX_TEXT = 2_000_000
 MAX_CHUNKS = 2000
+CHUNK_CHARACTERS = 1200
+CHUNK_OVERLAP_CHARACTERS = 150
 USER_AGENT = "LocalKnowledgeBot/0.1"
 
 
@@ -198,8 +200,8 @@ def chunks(pages):
     result = []
     for page in pages:
         text = " ".join(page["text"].split())
-        for offset in range(0, len(text), 1050):
-            content = text[offset : offset + 1200]
+        for offset in range(0, len(text), CHUNK_CHARACTERS - CHUNK_OVERLAP_CHARACTERS):
+            content = text[offset : offset + CHUNK_CHARACTERS]
             if not content.strip() or not any(c.isalnum() for c in content):
                 continue
             result.append(
