@@ -4,6 +4,7 @@ import base64
 import binascii
 import hmac
 import json
+import math
 import os
 import re
 import uuid
@@ -13,6 +14,29 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 MAX_ARCHIVE = 128 * 1024 * 1024
+
+
+AUTOMATION_DIR = Path("/automation")
+JOBS = ("workflow", "backup", "restore")
+
+
+def operator_metrics():
+    lines = []
+    for job in JOBS:
+        path = AUTOMATION_DIR / (job + ".json")
+        try:
+            record = json.loads(path.read_text())
+            for field in ("last_run", "last_success", "duration_seconds"):
+                value = record.get(field, 0)
+                if not isinstance(value, (int, float)) or not math.isfinite(value) or value < 0:
+                    raise ValueError("Invalid numeric receipt")
+                lines.append(f'blueprint_automation_{field}{{check="{job}"}} {value}')
+            success = int(record.get("success") is True)
+            lines.append(f'blueprint_automation_success{{check="{job}"}} {success}')
+        except (OSError, ValueError, TypeError):
+            lines.append(f'blueprint_automation_success{{check="{job}"}} 0')
+            lines.append(f'blueprint_automation_last_success{{check="{job}"}} 0')
+    return "\n".join(lines) + "\n"
 
 
 class Server(BaseHTTPRequestHandler):
@@ -44,6 +68,14 @@ class Server(BaseHTTPRequestHandler):
             return
         if urlsplit(self.path).path == "/auth":
             self.respond(200)
+            return
+        if urlsplit(self.path).path == "/operator-metrics":
+            body = operator_metrics().encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "text/plain; version=0.0.4")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
             return
         target = self.archive()
         if target is None or not target.is_file() or target.stat().st_size > MAX_ARCHIVE:
@@ -111,12 +143,50 @@ class Server(BaseHTTPRequestHandler):
             with Path("/data/events.jsonl").open("a") as stream:
                 for alert in data.get("alerts", [])[:20]:
                     name = alert.get("labels", {}).get("alertname")
-                    if name in {"DatabaseUnavailable", "ApiUnavailable", "HostDiskLow"}:
+                    if name in {
+                        "ModelRuntimeUnavailable",
+                        "ExternalEndpointUnavailable",
+                        "CertificateExpiring",
+                        "DatabaseMetricsUnavailable",
+                        "RedisMetricsUnavailable",
+                        "ResourceSamplerStale",
+                        "WorkflowStale",
+                        "BackupStale",
+                        "RestoreStale",
+                        "AutomationFailed",
+                        "AutomationMetricsUnavailable",
+                        "DatabaseUnavailable",
+                        "ApiUnavailable",
+                        "HostDiskLow",
+                        "MonitoringTargetUnavailable",
+                        "KnowledgeWorkerUnavailable",
+                    }:
                         stream.write(
                             json.dumps(
                                 {
                                     "time_utc": datetime.now(UTC).isoformat(),
                                     "alert": name,
+                                    "component": alert.get("labels", {}).get("job")
+                                    if alert.get("labels", {}).get("job")
+                                    in {
+                                        "external-workspace",
+                                        "external-ready",
+                                        "external-grafana",
+                                        "postgres-exporter",
+                                        "redis-exporter",
+                                        "operator-checks",
+                                        "ollama",
+                                        "api",
+                                        "proxy",
+                                        "loki",
+                                        "tempo",
+                                        "alloy",
+                                        "grafana",
+                                        "node",
+                                        "prometheus",
+                                        "alertmanager",
+                                    }
+                                    else "platform",
                                     "status": "resolved"
                                     if alert.get("status") == "resolved"
                                     else "firing",

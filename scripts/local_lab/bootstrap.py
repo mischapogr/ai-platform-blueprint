@@ -108,6 +108,36 @@ def cosign():
     return binary
 
 
+def ensure_image(name, locked):
+    try:
+        info = json.loads(docker("image", "inspect", locked["reference"]))[0]
+    except subprocess.CalledProcessError:
+        if (ROOT / f"infra/local-lab/{name.replace('_', '-')}-source.lock.json").exists():
+            stem = name.replace("_", "-")
+            source = json.loads((ROOT / f"infra/local-lab/{stem}-source.lock.json").read_text())
+            arguments = []
+            for key, value in source["build_args"].items():
+                if not re.fullmatch(r"[A-Z_]+", key):
+                    raise ValueError("Invalid runtime build argument") from None
+                arguments.extend(["--build-arg", key + "=" + value])
+            docker(
+                "build",
+                "--file",
+                f"infra/local-lab/{stem}.Dockerfile",
+                "--tag",
+                locked["source"],
+                *arguments,
+                ".",
+                timeout=1800,
+            )
+            info = json.loads(docker("image", "inspect", locked["source"]))[0]
+        else:
+            docker("pull", locked["reference"])
+            info = json.loads(docker("image", "inspect", locked["reference"]))[0]
+    if info["Id"] != locked["config_digest"]:
+        raise ValueError("Rebuilt/pulled image differs from reviewed lock: " + name)
+
+
 def init():
     cfg = state()
     PRIVATE.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -117,7 +147,7 @@ def init():
     images = image_lock()
     for name in (
         "skopeo",
-        "caddy",
+        "blackbox",
         "distribution",
         "db",
         "redis",
@@ -125,15 +155,16 @@ def init():
         "prometheus",
         "alertmanager",
         "node",
+        "grafana",
+        "loki",
+        "alloy",
+        "tempo",
+        "postgres_exporter",
+        "redis_exporter",
+        *(["ollama"] if "ollama" in images else []),
     ):
         locked = images[name]
-        try:
-            info = json.loads(docker("image", "inspect", locked["reference"]))[0]
-        except subprocess.CalledProcessError:
-            docker("pull", locked["reference"])
-            info = json.loads(docker("image", "inspect", locked["reference"]))[0]
-        if info["Id"] != locked["config_digest"]:
-            raise ValueError("Pinned image config does not match lock: " + name)
+        ensure_image(name, locked)
     packages = sorted(
         (ROOT / ".local/evidence/releases").glob("api-release-*/provenance.json"),
         key=lambda p: p.stat().st_mtime,
@@ -147,20 +178,9 @@ def init():
     tools = "ai-platform-blueprint-lab-tools:" + cfg["id"]
     docker("tag", provenance["image_config_digest"], tools)
     tls()
-    proxy_image = "ai-platform-blueprint-lab-proxy:" + cfg["id"]
-    docker(
-        "build",
-        "--tag",
-        proxy_image,
-        "--build-arg",
-        "CADDY_BASE=" + images["caddy"]["reference"],
-        "--file",
-        "infra/local-lab/Caddy.Dockerfile",
-        ".",
-    )
     env = {
         "LAB_NEXUS_IMAGE": images["nexus"]["reference"],
-        "LAB_CADDY_IMAGE": proxy_image,
+        "LAB_CONTROLLER_IMAGE": images["proxy"]["reference"],
         "LAB_TOOLS_IMAGE": tools,
         "LAB_NEXUS_PORT": cfg["nexus_port"],
         "LAB_REGISTRY_PORT": cfg["registry_port"],
@@ -174,5 +194,8 @@ def init():
     from .fallback import init as registry_init
 
     registry_init()
+    from .improvements import prober_up
+
+    prober_up()
     cosign()
     print("Local OCI registry and signing material are ready.", flush=True)

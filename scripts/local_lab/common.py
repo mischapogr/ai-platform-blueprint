@@ -128,30 +128,4 @@ def image_lock():
     path = ROOT / "infra/local-lab/images.lock.json"
     if path.exists():
         return json.loads(path.read_text())
-    sources = {
-        "nexus": "sonatype/nexus3:latest",
-        "skopeo": "quay.io/skopeo/stable:latest",
-        "caddy": "caddy:2.11.4",
-        "db": "pgvector/pgvector:0.8.1-pg16-bookworm",
-        "redis": "redis:7.4.2-alpine",
-        "proxy": "traefik:v3.6.1",
-        "prometheus": "prom/prometheus:v3.7.3",
-        "alertmanager": "prom/alertmanager:v0.29.0",
-        "node": "prom/node-exporter:v1.9.1",
-    }
-    images = {}
-    for name, ref in sources.items():
-        try:
-            info = json.loads(docker("image", "inspect", ref))[0]
-        except subprocess.CalledProcessError:
-            docker("pull", ref)
-            info = json.loads(docker("image", "inspect", ref))[0]
-        if not info.get("RepoDigests"):
-            raise RuntimeError("Runtime image has no immutable repository digest: " + name)
-        images[name] = {
-            "source": ref,
-            "reference": info["RepoDigests"][0],
-            "config_digest": info["Id"],
-        }
-    save(path, images, 0o644)
-    return images
+    raise RuntimeError("The reviewed runtime image lock is required; refusing unpinned defaults")

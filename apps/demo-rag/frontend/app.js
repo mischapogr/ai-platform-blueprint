@@ -5,11 +5,19 @@ function el(tag, text, className) { const node = document.createElement(tag); if
 function notice(message) { $('notice').textContent = message; $('notice').hidden = false; clearTimeout(notice.timer); notice.timer = setTimeout(() => $('notice').hidden = true, 7000); }
 async function api(path, options = {}) {
   const response = await fetch('/api' + path, {credentials: 'same-origin', ...options});
-  const data = await response.json().catch(() => ({detail: 'Unexpected server response'}));
+  const fallback = {
+    413: 'The server rejected the request size. Files may be up to 10 MiB; check the upload route if a smaller file fails.',
+    429: 'Too many requests. Wait a moment and try again.',
+    502: 'The gateway could not reach the application. Check API health.',
+    503: 'The service is temporarily unavailable. Check application and database health.',
+    504: 'The gateway timed out while waiting for the application.'
+  };
+  const data = await response.json().catch(() => ({detail: fallback[response.status] || 'Unexpected server response'}));
   if (!response.ok) {
     if (response.status === 401 && path !== '/session') lock();
     const message = Array.isArray(data.detail) ? data.detail.map(e => e.msg).join('; ') : data.detail;
-    throw new Error(message || 'The request could not be completed.');
+    const trace = response.headers.get('X-Trace-ID');
+    throw new Error((message || 'The request could not be completed.') + ` (HTTP ${response.status})` + (trace ? ` · Trace ${trace}` : ''));
   }
   return data;
 }
@@ -56,7 +64,7 @@ function updateMode() {
     $('chat-model').dataset.modelKey = modelKey;
   }
   $('consent-row').hidden = !(provider === 'openai' || (!general && c?.embedding_provider === 'openai'));
-  $('mode-note').textContent = provider === 'openai' ? 'OpenAI generates answers. Selected context leaves this machine.' : provider === 'ollama' ? 'A local Ollama model generates the answer. External retrieval still requires consent if enabled.' : c?.embedding_provider === 'openai' && !general ? 'Retrieval uses OpenAI embeddings; answers show retrieved passages.' : c?.embedding_provider === 'ollama' && !general ? 'Retrieval uses local Ollama embeddings; answers show retrieved passages.' : 'Local search returns source passages without a model call.';
+  $('mode-note').textContent = provider === 'openai' ? (general ? 'OpenAI generates chat responses. Selected context leaves this machine.' : 'OpenAI selects quoted source excerpts. Selected context leaves this machine.') : provider === 'ollama' ? (general ? 'A local Ollama model generates chat responses.' : 'A local model selects quoted source excerpts. Review the references for context.') : c?.embedding_provider === 'openai' && !general ? 'Retrieval uses OpenAI embeddings; answers show retrieved passages.' : c?.embedding_provider === 'ollama' && !general ? 'Retrieval uses local Ollama embeddings; answers show retrieved passages.' : 'Local search returns source passages without a model call.';
   if (general) { $('active-collection').textContent = 'General chat · no sources attached'; $('collection-policy').textContent = 'No collection context'; }
   else { $('active-collection').textContent = c?.name || 'No collection selected'; $('collection-policy').textContent = c?.allow_external ? 'External processing allowed' : 'Local only'; }
 }

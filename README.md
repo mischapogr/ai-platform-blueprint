@@ -128,7 +128,7 @@ tests/                    Unit, integration, failure and small load-smoke checks
 docs/                     Uppercase Markdown documentation with Mermaid diagrams
 ```
 
-[Local infrastructure lab](docs/LOCAL-LAB.md) · [Documentation index](docs/README.md) · [Architecture](docs/ARCHITECTURE.md) ·
+[Local observability](docs/LOCAL-OBSERVABILITY.md) · [Local infrastructure lab](docs/LOCAL-LAB.md) · [Documentation index](docs/README.md) · [Architecture](docs/ARCHITECTURE.md) ·
 [Roadmap](docs/ROADMAP.md) · [Validation](docs/VALIDATION.md)
 
 This is a single-owner localhost application. Collections are context boundaries,

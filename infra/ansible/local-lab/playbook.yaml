@@ -16,7 +16,7 @@
     - name: Install guest runtime packages
       tags: [provision]
       ansible.builtin.apt:
-        name: [docker.io, docker-compose-v2, ca-certificates, openssl]
+        name: [docker.io, docker-compose-v2, ca-certificates, openssl, logrotate]
         update_cache: true
         cache_valid_time: 3600
         state: present
@@ -34,6 +34,25 @@
         group: root
         mode: '0755'
       loop: ['', postgres, migrations, proxy, monitoring, trust]
+    - name: Create the proxy access log directory for its non-root user
+      ansible.builtin.file:
+        path: /opt/ai-platform-blueprint/proxy-logs
+        state: directory
+        owner: '65532'
+        group: '65532'
+        mode: '0755'
+    - name: Create guest metric textfile directory
+      ansible.builtin.file:
+        path: /opt/ai-platform-blueprint/node-textfile
+        state: directory
+        mode: '0755'
+    - name: Create private persistent Tempo storage
+      ansible.builtin.file:
+        path: /opt/ai-platform-blueprint/tempo-data
+        state: directory
+        owner: '10001'
+        group: '10001'
+        mode: '0700'
     - name: Create protected runtime secret directory
       ansible.builtin.file:
         path: /opt/ai-platform-blueprint/secrets
@@ -61,6 +80,7 @@
         group: root
         mode: preserve
       no_log: true
+      register: deployment_configuration
     - name: Restrict the proxy TLS private key to its container user
       ansible.builtin.file:
         path: /opt/ai-platform-blueprint/proxy/tls.key
@@ -75,6 +95,70 @@
         group: root
         mode: '0600'
       no_log: true
+    - name: Configure bounded proxy access log rotation in the guest
+      ansible.builtin.copy:
+        dest: '/etc/systemd/system/{{ item.name }}'
+        content: '{{ item.content }}'
+        mode: '0644'
+      loop:
+        - name: blueprint-proxy-logrotate.service
+          content: |
+            [Unit]
+            Description=Rotate local blueprint proxy metadata logs
+            [Service]
+            Type=oneshot
+            ExecStart=/usr/sbin/logrotate --state /opt/ai-platform-blueprint/monitoring/logrotate.status /opt/ai-platform-blueprint/monitoring/proxy-logrotate.conf
+        - name: blueprint-proxy-logrotate.timer
+          content: |
+            [Unit]
+            Description=Check local blueprint proxy log size every five minutes
+            [Timer]
+            OnBootSec=5min
+            OnUnitActiveSec=5min
+            [Install]
+            WantedBy=timers.target
+    - name: Install project-only guest resource sampling units
+      ansible.builtin.copy:
+        dest: '/etc/systemd/system/{{ item.name }}'
+        content: '{{ item.content }}'
+        mode: '0644'
+      loop:
+        - name: blueprint-resources.service
+          content: |
+            [Unit]
+            Description=Sample only blueprint guest container resource metadata
+            After=docker.service
+            [Service]
+            Type=oneshot
+            ExecStart=/usr/bin/python3 /opt/ai-platform-blueprint/monitoring/resource_sampler.py
+            NoNewPrivileges=true
+            ProtectHome=true
+            ProtectSystem=strict
+            ReadWritePaths=/opt/ai-platform-blueprint/node-textfile
+            ProtectKernelTunables=true
+            RestrictAddressFamilies=AF_UNIX
+        - name: blueprint-resources.timer
+          content: |
+            [Unit]
+            Description=Sample local platform container resources every thirty seconds
+            [Timer]
+            OnBootSec=30s
+            OnUnitActiveSec=30s
+            AccuracySec=1s
+            [Install]
+            WantedBy=timers.target
+    - name: Enable guest resource history timer
+      ansible.builtin.systemd_service:
+        name: blueprint-resources.timer
+        daemon_reload: true
+        enabled: true
+        state: started
+    - name: Enable guest-only proxy log rotation timer
+      ansible.builtin.systemd_service:
+        name: blueprint-proxy-logrotate.timer
+        daemon_reload: true
+        enabled: true
+        state: started
     - name: Pull only the signed digest-pinned images
       ansible.builtin.command:
         argv: [docker, compose, --project-name, blueprint-local, --file, /opt/ai-platform-blueprint/compose.yaml, pull]
@@ -82,6 +166,11 @@
     - name: Start durable storage and wakeup cache
       ansible.builtin.command:
         argv: [docker, compose, --project-name, blueprint-local, --file, /opt/ai-platform-blueprint/compose.yaml, up, --detach, --wait, db, redis]
+      changed_when: true
+    - name: Configure the read-only database monitoring role without password arguments
+      ansible.builtin.command:
+        argv: [docker, compose, --project-name, blueprint-local, --file, /opt/ai-platform-blueprint/compose.yaml, exec, -T, db, psql, -U, platform_admin, -d, platform, -v, ON_ERROR_STOP=1, -f, /monitoring/postgres-metrics-role.sql]
+      no_log: true
       changed_when: true
     - name: Apply the additive application migrations
       ansible.builtin.command:
@@ -91,4 +180,9 @@
     - name: Start the signed application and monitoring services
       ansible.builtin.command:
         argv: [docker, compose, --project-name, blueprint-local, --file, /opt/ai-platform-blueprint/compose.yaml, up, --detach, --wait, --wait-timeout, '180']
+      changed_when: true
+    - name: Reload services whose bind-mounted configuration changed
+      ansible.builtin.command:
+        argv: [docker, compose, --project-name, blueprint-local, --file, /opt/ai-platform-blueprint/compose.yaml, restart, --no-deps, prometheus, grafana, alloy, tempo, loki, proxy]
+      when: deployment_configuration.changed
       changed_when: true

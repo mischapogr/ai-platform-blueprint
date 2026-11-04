@@ -1,0 +1,10 @@
+{
+  "url": "https://github.com/grafana/tempo/archive/refs/tags/v2.10.10.tar.gz",
+  "sha256": "9a4ecf9f2d9c245704965b2844a35d6769e0ed97fdfc3d44663f90d307c5d466",
+  "builder": "golang@sha256:d200d2dd76b03a99b52651fd1325aff7dcd35422c35c01bac56571b0507f3deb",
+  "build_args": {
+    "GO_IMAGE": "golang@sha256:d200d2dd76b03a99b52651fd1325aff7dcd35422c35c01bac56571b0507f3deb",
+    "SOURCE_URL": "https://github.com/grafana/tempo/archive/refs/tags/v2.10.10.tar.gz",
+    "SOURCE_SHA256": "9a4ecf9f2d9c245704965b2844a35d6769e0ed97fdfc3d44663f90d307c5d466"
+  }
+}

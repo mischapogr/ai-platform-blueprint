@@ -1,0 +1,10 @@
+{
+  "url": "https://github.com/distribution/distribution/archive/refs/tags/v3.1.2.tar.gz",
+  "sha256": "2f9b6fc00bec854e62e9b720903a9c9b48018505177f7c7a8ce7b74da2b23e4f",
+  "builder": "golang@sha256:d200d2dd76b03a99b52651fd1325aff7dcd35422c35c01bac56571b0507f3deb",
+  "build_args": {
+    "GO_IMAGE": "golang@sha256:d200d2dd76b03a99b52651fd1325aff7dcd35422c35c01bac56571b0507f3deb",
+    "SOURCE_URL": "https://github.com/distribution/distribution/archive/refs/tags/v3.1.2.tar.gz",
+    "SOURCE_SHA256": "2f9b6fc00bec854e62e9b720903a9c9b48018505177f7c7a8ce7b74da2b23e4f"
+  }
+}

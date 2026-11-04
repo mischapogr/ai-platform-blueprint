@@ -112,3 +112,47 @@ establish a production memory or throughput guarantee.
 See [retrieval evaluation](RETRIEVAL-EVALUATION.md),
 [answer evaluation](ANSWER-EVALUATION.md) and the
 [native Ollama API reference](https://github.com/ollama/ollama/blob/main/docs/api.md).
+
+## Optional VM CPU profile
+
+The local-lab profile can run a source-built CPU-only Ollama service on the VM's
+private backend network. It has no published port, cloud access, GPU devices or
+application/database secrets. Only the API/worker call it. Models are copied from
+the project-owned qualification cache into a read-only guest mount; collection
+metadata persists the embedding digest/profile/dimensions as before.
+
+```bash
+make lab-model-enable LAB_VM=recovery
+make lab-model-test LAB_VM=recovery
+```
+
+Enablement transfers only the model blobs/manifests, takes an encrypted database
+backup, cleanly stops the owned guest services and reboots the **same disk** with
+8 GiB RAM and 4 vCPUs. It then deploys the locally signed image envelope. The model
+container has a 4.5 GiB limit, two CPUs, one loaded model, one parallel request,
+a bounded queue and no model keep-alive. CPU generation has a bounded 180-second
+read timeout; this is an interactive lab, not a throughput qualification.
+
+The profile uses `nomic-embed-text:latest` for 768-dimensional embeddings and
+`llama3.2:3b` for generation, with actual digests recorded during qualification.
+Existing offline collections retain their original vectors. To use semantic
+retrieval, create a **new collection with Ollama embeddings**, add your sources,
+wait until they are ready, then select the local model in chat. Existing lexical
+collections can also use local source-excerpt answers without changing their
+stored embeddings. No external provider key is needed.
+
+Knowledge mode returns validated model-selected source excerpts and application-
+rendered citations, or an insufficient-evidence response. It does not freely
+paraphrase source facts. General chat still generates free-form text and has no
+knowledge-grounding claim. See [answer evaluation](ANSWER-EVALUATION.md).
+
+The VM check creates/deletes only its own synthetic collection. It exercises
+worker semantic indexing, local answers, reported usage, unsupported-question
+abstention, citation bounds, a source-instruction canary and external-provider
+refusal. Model health appears through the guest resource sampler and a dedicated
+alert; actual inference needs the workflow check as well as a running process.
+
+The guest CPU profile sets `OLLAMA_NOPRUNE=1` because its seeded model cache is
+read-only. Ollama 0.40.14 otherwise prunes empty manifest directories at startup,
+which can fail on a subsequent boot. Models remain immutable; updates require
+explicit cache qualification and transfer.

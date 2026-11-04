@@ -1,5 +1,20 @@
 services:
+  blackbox:
+    image: ${LAB_BLACKBOX_IMAGE:-prom/blackbox-exporter:v0.29.1}
+    network_mode: host
+    user: '65534:65534'
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    command: [--config.file=/etc/blackbox.yml, '--web.listen-address=127.0.0.1:${LAB_BLACKBOX_PORT:-19115}']
+    volumes: ['${LAB_STATE}/blackbox.yml:/etc/blackbox.yml:ro', '${LAB_SECRETS}/ca.crt:/trust/ca.crt:ro']
+    mem_limit: 64m
+    cpus: 0.25
+    restart: unless-stopped
+    logging:
+      options: {max-size: 2m, max-file: '2'}
   distribution:
+    environment: {OTEL_TRACES_EXPORTER: none}
     image: ${LAB_DISTRIBUTION_IMAGE:-registry:3}
     user: '${LAB_UID}:${LAB_GID}'
     read_only: true
@@ -25,14 +40,14 @@ services:
     logging:
       options: {max-size: 5m, max-file: '2'}
   registry:
-    image: ${LAB_CADDY_IMAGE}
+    image: ${LAB_CONTROLLER_IMAGE}
     user: '${LAB_UID}:${LAB_GID}'
     read_only: true
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
-    tmpfs: ['/tmp:mode=1777,size=16m', '/data:mode=1777,size=16m', '/config:mode=1777,size=16m']
+    command: [--entrypoints.registry.address=:5443, --entrypoints.nexus.address=:5444, --providers.file.filename=/etc/traefik/controller.yaml, --log.level=WARN]
     volumes:
-      - ${LAB_STATE}/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ${LAB_STATE}/controller.yaml:/etc/traefik/controller.yaml:ro
       - ${LAB_SECRETS}/registry.crt:/tls/server.crt:ro
       - ${LAB_SECRETS}/registry.key:/tls/server.key:ro
     ports: ['127.0.0.1:${LAB_REGISTRY_PORT}:5443', '127.0.0.1:${LAB_NEXUS_PORT}:5444']
@@ -51,6 +66,7 @@ services:
     security_opt: [no-new-privileges:true]
     volumes:
       - ${LAB_ROOT}/scripts/local_lab/artifact_server.py:/receiver.py:ro
+      - ${LAB_STATE}/automation:/automation:ro
       - ${LAB_STATE}/alerts:/data
       - ${LAB_STATE}/backups:/backups
       - ${LAB_SECRETS}/registry-password:/run/registry-password:ro

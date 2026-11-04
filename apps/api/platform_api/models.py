@@ -7,7 +7,7 @@ from pathlib import Path
 from openai import APIError, OpenAI
 from prometheus_client import Counter, Gauge, Histogram
 
-from . import telemetry
+from . import answer_guard, telemetry
 from .retrieval import embed
 
 CALLS = Counter("platform_model_calls_total", "Provider calls", ["operation", "outcome"])
@@ -27,7 +27,7 @@ RECORDED_CALLS = Gauge(
 )
 
 
-PROMPT_VERSION = "reference-v1"
+PROMPT_VERSION = "reference-excerpts-v2"
 
 
 class ModelError(Exception):
@@ -115,6 +115,8 @@ def embeddings(texts, collection, *, purpose="document"):
 
 
 def build_prompt(question, history, passages, *, knowledge=False):
+    if knowledge:
+        return answer_guard.prompt(question, passages)
     context = "\n\n".join(
         f"[{i}] {row['title']}\n{row['content']}" for i, row in enumerate(passages, 1)
     )
@@ -140,9 +142,18 @@ def build_prompt(question, history, passages, *, knowledge=False):
 @telemetry.traced("provider.generate")
 def generate(question, history, passages, collection, model, *, provider="openai", knowledge=False):
     telemetry.annotate(**{"provider.operation": provider + ".generation"})
+    if knowledge and not passages:
+        return answer_guard.ABSTENTION, {"input_tokens": 0, "output_tokens": 0}
     instructions, messages = build_prompt(question, history, passages, knowledge=knowledge)
     if provider == "ollama":
-        return local_generate(model, instructions, messages, collection)
+        answer, usage = local_generate(
+            model,
+            instructions,
+            messages,
+            collection,
+            schema=answer_guard.SCHEMA if knowledge else None,
+        )
+        return (answer_guard.render(answer, passages) if knowledge else answer), usage
     if provider != "openai":
         raise ModelError("Unsupported generation provider")
     if not collection["allow_external"]:
@@ -165,7 +176,11 @@ def generate(question, history, passages, collection, model, *, provider="openai
         usage = response.usage
         record_usage(collection["id"], "chat", model, usage.input_tokens, usage.output_tokens)
         CALLS.labels("chat", "ok").inc()
-        return response.output_text, {
+        return (
+            answer_guard.render(response.output_text, passages)
+            if knowledge
+            else response.output_text
+        ), {
             "input_tokens": usage.input_tokens,
             "output_tokens": usage.output_tokens,
         }
@@ -194,12 +209,12 @@ def local_embeddings(texts, collection, purpose):
         DURATION.labels("ollama.embedding").observe(time.perf_counter() - started)
 
 
-def local_generate(model, instructions, messages, collection):
+def local_generate(model, instructions, messages, collection, *, schema=None):
     from . import local_models
 
     started = time.perf_counter()
     try:
-        answer, usage = local_models.generate(model, instructions, messages)
+        answer, usage = local_models.generate(model, instructions, messages, schema=schema)
         record_usage(
             collection["id"], "ollama.chat", model, usage["input_tokens"], usage["output_tokens"]
         )

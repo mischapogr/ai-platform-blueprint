@@ -1,0 +1,12 @@
+{
+  "builder": "golang@sha256:d200d2dd76b03a99b52651fd1325aff7dcd35422c35c01bac56571b0507f3deb",
+  "commit": "72d2a71f1f7c91fc4564083bc4c58655df85e5d0",
+  "sha256": "fe0a064b68ba6b0ee44c0e24786775335d397ce3f725a8696f1362db784b090a",
+  "url": "https://github.com/oliver006/redis_exporter/archive/72d2a71f1f7c91fc4564083bc4c58655df85e5d0.tar.gz",
+  "build_args": {
+    "GO_IMAGE": "golang@sha256:d200d2dd76b03a99b52651fd1325aff7dcd35422c35c01bac56571b0507f3deb",
+    "SOURCE_URL": "https://github.com/oliver006/redis_exporter/archive/72d2a71f1f7c91fc4564083bc4c58655df85e5d0.tar.gz",
+    "SOURCE_SHA256": "fe0a064b68ba6b0ee44c0e24786775335d397ce3f725a8696f1362db784b090a",
+    "SOURCE_REVISION": "72d2a71f1f7c91fc4564083bc4c58655df85e5d0"
+  }
+}

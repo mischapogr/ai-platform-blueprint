@@ -71,17 +71,33 @@ def ansible(name, tags=None):
     print("Ansible completed for " + name + (" (" + tags + ")" if tags else ""), flush=True)
 
 
+def owns_tunnel(command, folder):
+    arguments = command.rstrip(b"\0").split(b"\0")
+    return (
+        arguments[0] == b"/usr/bin/ssh"
+        and b"-N" in arguments
+        and b"-R" in arguments
+        and ("UserKnownHostsFile=" + str(folder / "known_hosts")).encode() in arguments
+        and str(PRIVATE / "lab_ssh").encode() in arguments
+        and b"lab@127.0.0.1" in arguments
+    )
+
+
 def tunnel(name):
     cfg = state()
     folder = vm.directory(name)
     pid = folder / "registry-tunnel.pid"
     if pid.exists():
         old = int(pid.read_text())
+        from pathlib import Path
+
         try:
-            os.kill(old, 0)
+            command = Path(f"/proc/{old}/cmdline").read_bytes()
+        except FileNotFoundError:
+            command = b""
+        if owns_tunnel(command, folder):
             return
-        except ProcessLookupError:
-            pass
+        pid.unlink()
     args = [
         "/usr/bin/ssh",
         "-F",
@@ -146,6 +162,7 @@ def prepare():
                     "middlewares": ["redirect"],
                 },
                 "workspace": {
+                    "priority": 10,
                     "entryPoints": ["secure"],
                     "rule": (
                         "Host(`localhost`) && (Path(`/`) || PathPrefix(`/api/`) || "
@@ -237,6 +254,12 @@ def prepare():
             **defaults,
             "image": images["redis"],
             "user": "999:999",
+            "healthcheck": {
+                "test": ["CMD", "redis-cli", "ping"],
+                "interval": "10s",
+                "timeout": "3s",
+                "retries": 4,
+            },
             "read_only": True,
             "networks": ["backend"],
             "mem_limit": "64m",
@@ -284,6 +307,19 @@ def prepare():
             "read_only": True,
             "tmpfs": ["/tmp:size=32m,mode=1777"],  # noqa: S108 - isolated container tmpfs
             "command": ["python", "/app/worker/main.py"],
+            "healthcheck": {
+                "test": [
+                    "CMD",
+                    "python",
+                    "-c",
+                    "import redis,time; r=redis.Redis(host='redis',socket_timeout=2); "
+                    "h=r.get('kb:heartbeat'); assert h and time.time()-float(h)<210",
+                ],
+                "interval": "10s",
+                "timeout": "3s",
+                "retries": 4,
+                "start_period": "20s",
+            },
             "environment": {**env, "PYTHONPATH": "/app"},
             "secrets": ["app_password", "openai_api_key"],
             "networks": ["backend", "egress"],
@@ -296,6 +332,7 @@ def prepare():
             "image": images["proxy"],
             "user": "65532:65532",
             "read_only": True,
+            "tmpfs": ["/tmp:size=64m,mode=1777"],  # noqa: S108 - bounded proxy spill buffer
             "command": [
                 "--entrypoints.web.address=:8080",
                 "--entrypoints.secure.address=:8443",
@@ -365,6 +402,13 @@ def prepare():
         "volumes": {name: {} for name in ("database", "api_logs", "prometheus", "alertmanager")},
         "networks": {name: {"internal": True} for name in ("backend", "edge", "telemetry")},
     }
+    if cfg.get("database_volume"):
+        import re
+
+        volume = cfg["database_volume"]
+        if not re.fullmatch(r"ai-blueprint-[a-f0-9]{10}-database-alpine-[a-f0-9]{8}", volume):
+            raise ValueError("Unrecognized migrated database volume")
+        config["volumes"]["database"] = {"external": True, "name": volume}
     config["networks"].update(egress={}, management={})
     save(target / "compose.yaml", config, 0o644)
     monitoring = {
@@ -442,6 +486,17 @@ def prepare():
         },
         0o644,
     )
+    from .observability import configure
+
+    configure(target, config, routes, images, origin)
+    from .improvements import configure as configure_improvements
+
+    configure_improvements(target, config, images, origin)
+    from .model_profile import configure as configure_models
+
+    configure_models(config, images, cfg, target)
+    save(target / "compose.yaml", config, 0o644)
+    save(target / "proxy/routes.yaml", routes, 0o644)
     return target
 
 

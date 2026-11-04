@@ -28,39 +28,13 @@ def init():
             "    rootdirectory: /var/lib/registry\nhttp:\n  addr: :5000\n"
         )
     )
+    (STATE / "automation").mkdir(exist_ok=True, mode=0o700)
     (STATE / "backups").mkdir(exist_ok=True, mode=0o700)
-    environment = (STATE / "compose.env").read_text()
-    if "LAB_DISTRIBUTION_IMAGE=" not in environment:
-        environment += "LAB_DISTRIBUTION_IMAGE=" + images["distribution"]["reference"] + "\n"
-    (STATE / "compose.env").write_text(environment)
-    (STATE / "Caddyfile").write_text("""{
-  admin off
-  auto_https off
-}
-:5444 {
-  tls /tls/server.crt /tls/server.key
-  reverse_proxy nexus:8081
-}
-:5443 {
-  tls /tls/server.crt /tls/server.key
-  route {
-    forward_auth alerts:9099 {
-      uri /auth
-    }
-    handle /lab-alerts {
-      reverse_proxy alerts:9099
-    }
-    handle /backup-store/* {
-      reverse_proxy alerts:9099
-    }
-    handle {
-      reverse_proxy distribution:5000
-    }
-  }
-}
-""")
+    from .controller import prepare
+
+    prepare(images)
     compose("up", "--detach", "distribution", "alerts", "registry")
-    # A bind-mounted Caddyfile change does not alter the Compose service hash.
+    # Reload the private file-provider configuration explicitly.
     compose("restart", "registry")
     context = ssl.create_default_context(cafile=str(PRIVATE / "ca.crt"))
     with httpx.Client(

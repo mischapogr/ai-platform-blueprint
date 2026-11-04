@@ -24,6 +24,20 @@ if __name__ == "__main__":
             "vm-remove",
             "stop",
             "backup",
+            "diagnose",
+            "monitoring-check",
+            "monitoring-outage",
+            "runtime-audit",
+            "database-migrate",
+            "models-enable",
+            "models-check",
+            "models-evaluate",
+            "publish-qualified",
+            "workflow-run",
+            "backup-run",
+            "restore-run",
+            "schedule-install",
+            "improvements-check",
         ],
     )
     parser.add_argument("--name", default="primary")
@@ -87,3 +101,59 @@ if __name__ == "__main__":
         from local_lab.recovery import backup
 
         backup(args.name)
+
+    elif args.action == "diagnose":
+        from local_lab.diagnostics import diagnose
+
+        diagnose(args.name)
+
+    elif args.action == "monitoring-check":
+        from local_lab.monitoring_check import check
+
+        check(args.name)
+
+    elif args.action == "monitoring-outage":
+        from local_lab.monitoring_fault import check
+
+        check(args.name)
+
+    elif args.action == "runtime-audit":
+        from local_lab.runtime_security import audit
+
+        raise SystemExit(0 if audit() else 1)
+
+    elif args.action in {"workflow-run", "backup-run", "restore-run"}:
+        from local_lab.automation import execute
+
+        execute(args.action.removesuffix("-run"), args.name)
+    elif args.action == "schedule-install":
+        from local_lab.automation import install
+
+        install(args.name)
+    elif args.action == "improvements-check":
+        from local_lab.improvements_check import check
+
+        check(args.name)
+
+    elif args.action == "publish-qualified":
+        from local_lab.registry import publish
+
+        publish(qualified=True)
+
+    elif args.action == "database-migrate":
+        from local_lab.database_migration import apply
+
+        apply(args.name)
+    elif args.action == "models-enable":
+        from local_lab.model_profile import enable
+
+        enable(args.name)
+    elif args.action == "models-check":
+        from local_lab.model_check import check
+
+        check(args.name)
+
+    elif args.action == "models-evaluate":
+        from local_lab.model_profile import evaluate
+
+        evaluate(args.name)

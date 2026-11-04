@@ -5,7 +5,7 @@ import re
 import uuid
 from pathlib import Path
 
-from platform_api import db, ingest_job, knowledge, models
+from platform_api import answer_guard, db, ingest_job, knowledge, models
 
 HERE = Path(__file__).resolve().parent
 
@@ -85,6 +85,7 @@ def run():
     for case in cases["cases"]:
         collection, retrieved = index_case(case)
         for mode, passages in (("fixed", case["passages"]), ("retrieved", retrieved)):
+            print("Answer case: " + case["id"] + "/" + mode, flush=True)
             answer, usage = models.generate(
                 case["question"],
                 [],
@@ -100,6 +101,16 @@ def run():
                 {
                     "id": case["id"],
                     "mode": mode,
+                    "question": case["question"],
+                    "supplied_passages": [
+                        {
+                            "citation": i,
+                            "source": p["source"],
+                            "title": p["title"],
+                            "content": p["content"],
+                        }
+                        for i, p in enumerate(passages, 1)
+                    ],
                     "answer": answer,
                     "usage": usage,
                     "supplied_sources": sorted(available),
@@ -125,6 +136,7 @@ def run():
     return {
         "version": cases["version"],
         "prompt_version": models.PROMPT_VERSION,
+        "render_version": answer_guard.RENDER_VERSION,
         "summary": {
             "cases": len(results),
             "automatic_check_failures": failures,

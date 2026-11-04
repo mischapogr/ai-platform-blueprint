@@ -16,11 +16,29 @@ local semantic collection for that case. Missing expected sources are recorded a
 retrieval failures, distinct from the answer checks. Default CI runs deterministic
 scorer/provider-contract tests without live generation.
 
-Generation uses the versioned `reference-v1` prompt and recorded provider/model
-identity. The fixed-evidence path requests a knowledge answer even when evidence
-is empty, so the model's abstention can be inspected independently of the API's
-existing early no-match response. These are diagnostic direct generation calls;
-they do not all represent complete user requests through `/api/chat`.
+Knowledge generation now uses `reference-excerpts-v2`: the model selects short,
+verbatim source excerpts through a bounded JSON schema. The application validates
+every excerpt against the supplied passages and renders citations itself. If an
+otherwise valid model citation points at the wrong passage, it can be corrected
+only when the exact quote occurs in one unique supplied passage. Invented text,
+out-of-range indices and ambiguous correction candidates remain rejected.
+Unparseable output, invented text, out-of-range references and unexpected fields
+produce an explicit insufficient-evidence response. Citation-like brackets inside
+source quotes are displayed distinctly so they cannot forge application citations.
+General chat remains a separate free-form mode.
+
+With empty knowledge evidence, the application abstains without calling a model.
+That test qualifies the application boundary, not the model's own abstention.
+Ollama uses its native structured-output schema; provider responses still undergo
+application validation. Passage titles/content are JSON-encoded untrusted data and
+the question is a separate message. There are no model tools or action execution.
+
+On 2026-11-04, the real local `llama3.2:3b` run passed all automatic checks across
+16 fixed/retrieved cases, using the same synthetic cases and unchanged scorer.
+The private report is `.local/evidence/ai-blueprint-models-babb0236fa28.json`;
+`.local/evidence/answer-review-v2.md` contains pending reviewer fields. Historical
+v1 failures remain historical evidence. No human approval or broad injection-
+resistance score is inferred from these automatic results.
 
 ## Automated checks and limits
 

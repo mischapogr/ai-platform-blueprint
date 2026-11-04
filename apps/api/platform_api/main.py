@@ -49,7 +49,9 @@ app = FastAPI(title="AI Platform Reference – local knowledge workspace", lifes
 async def observe(request: Request, call_next):
     started = time.perf_counter()
     status = 500
-    with telemetry.span("http.request", parent=request.headers.get("traceparent")) as active:
+    with telemetry.span(
+        "http.request", parent=request.headers.get("traceparent"), root=True
+    ) as active:
         try:
             response = await call_next(request)
             status = response.status_code

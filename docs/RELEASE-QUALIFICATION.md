@@ -94,3 +94,33 @@ custody. Runtime dependency images are pinned and mirrored, but only the API ima
 has the described strict scan/SBOM qualification. This is a local development
 identity, not a public release trust policy or independently attested provenance.
 Cloud delivery and physical offsite recovery remain separate unqualified scopes.
+
+## Full-runtime development and security gate
+
+The lab now scans the complete pinned application/monitoring/controller inventory,
+including the optional CPU model image, with CycloneDX SBOMs and strict HIGH/
+CRITICAL failures. `make lab-qualified-publish` runs this gate before publication
+and requires an exact, complete inventory with no unresolved HIGH/CRITICAL findings. It binds the summary hash
+into the signed envelope. An ordinary development publication explicitly records
+`full_runtime_security_passed=false`; it cannot inherit a prior qualification.
+
+Runtime source recipes pin upstream archives, checksums and build arguments. The
+registry and node exporter are rebuilt with patched Go dependencies; PostgreSQL
+uses Alpine plus source-built pgvector and a patched gosu helper; Tempo stays on
+a maintained 2.x release. The local registry TLS/auth proxy reuses pinned Traefik.
+Grafana uses its official core image and checksum-pinned **official signed**
+Prometheus/Loki/Tempo packages. Unused backend datasource packages are removed;
+plugin signature validation is not disabled. Two raw Tempo-module findings in the
+required signed Grafana plugin are handled by an
+[exact-artifact source assessment](TEMPO-SOURCE-ASSESSMENT.md). Both affected
+server packages are absent from the plugin and both upstream fixes are present
+in its dependency revision. Unknown/changed findings remain blocking. No ignore
+rule or unfixed-finding exemption was added. Refer to the current private scan rather than treating
+an API-only clean scan as approval of supporting components.
+
+The database-base migration uses a quiesced logical dump/restore into a new owned
+volume, validates knowledge hashes/vectors before exposing the app, and retains
+the original volume. Raw PostgreSQL files are not reused across libc environments.
+Grafana's SQLite state is backed up consistently and encrypted before its major
+version update. These measures do not establish public signing identity, offsite
+recovery or zero-downtime deployment.

@@ -9,44 +9,82 @@
     "reference": "quay.io/skopeo/stable@sha256:62da3f53e4b72219741bfa6681e092d30391a880b6346d20bf064778f7caa3c5",
     "config_digest": "sha256:56a8d51c0f3bb15e9427d2bb494fcf7403fa167bbcefd83018a7c59f945bff8b"
   },
-  "caddy": {
-    "source": "caddy:2.11.4",
-    "reference": "caddy@sha256:0c994536bddb66445885237f1a5dcc1916bccea922661c76b4e9fc24061f9b52",
-    "config_digest": "sha256:2d8b1708bf8008935c0e2a9b6564f7f080cf9a73af3b27718f286230449b7101"
-  },
   "db": {
-    "source": "pgvector/pgvector:0.8.1-pg16-bookworm",
-    "reference": "pgvector/pgvector@sha256:33198da2828a14c30348d2ccb4750833d5ed9a44c88d840a0e523d7417120337",
-    "config_digest": "sha256:4c0c0efbd40e8ff42363074292654a7831cac506fc01a1c89627f1b1040ba341"
+    "source": "ai-platform-blueprint-db:security",
+    "reference": "sha256:f1b480d65d1cf1aa97dfb49cec94312272c6ac6137a857cf3804af7c066b2f02",
+    "config_digest": "sha256:f1b480d65d1cf1aa97dfb49cec94312272c6ac6137a857cf3804af7c066b2f02",
+    "runtime_uid": 70
   },
   "redis": {
-    "source": "redis:7.4.2-alpine",
-    "reference": "redis@sha256:02419de7eddf55aa5bcf49efb74e88fa8d931b4d77c07eff8a6b2144472b6952",
-    "config_digest": "sha256:8f5c54441eb93183170be8c9fc2d8e8275171a6866ca1b4ae682a2ced6a98889"
+    "source": "redis:7.4-alpine",
+    "reference": "redis@sha256:8da19c7399dca900c6822a1cf30f9d2285585e2c4b457ff4095b0f4500054d3f",
+    "config_digest": "sha256:98c6ca8f397f86e469be752c3e7ed5eb8b17f2479840cb69a2e413037038e9f4"
   },
   "proxy": {
-    "source": "traefik:v3.6.1",
-    "reference": "traefik@sha256:fd5932c796f7e2db9fd6bff485ef693d53797f0ee8ad03dc68aa424ea6f21958",
-    "config_digest": "sha256:1fd2908c092e5b20b852f9891b365aa5ec46cf2691388fc2e0d33e9d9758bdf0"
+    "source": "traefik:v3.7.17",
+    "reference": "traefik@sha256:68ae5fe5b64ca166704b746a9e8afcd385e36b3f569a5691401bf652d57b3748",
+    "config_digest": "sha256:a72cb2f4a2109f1ae52261c86d56b7d33a27dc5c4e211ce3c7835b772338b94f"
   },
   "prometheus": {
-    "source": "prom/prometheus:v3.7.3",
-    "reference": "prom/prometheus@sha256:49214755b6153f90a597adcbff0252cc61069f8ab69ce8411285cd4a560e8038",
-    "config_digest": "sha256:a683da7699127231b140f7dbd7d60e9741d51543ba91c656bf3287860a39428f"
+    "source": "prom/prometheus:v3.15.1",
+    "reference": "prom/prometheus@sha256:fa3302279710be2f21a8301ec17a8b4f2301fd829bd113839b3b6b02b6f191a2",
+    "config_digest": "sha256:876ae6bcb0d6c9190d799e82c996fbe5faecdaaa0ec84f5e7dd272c0542ea63c"
   },
   "alertmanager": {
-    "source": "prom/alertmanager:v0.29.0",
-    "reference": "prom/alertmanager@sha256:88743b63b3e09ea6e31e140ced5bf45f4a8e82c617c2a963f78841f4995ad1d7",
-    "config_digest": "sha256:e0057376123cda19f6773d2ca309c3850a111ec9569e5267a22048a935e8159d"
+    "source": "prom/alertmanager:v0.34.2",
+    "reference": "prom/alertmanager@sha256:39d8bb3966c694a124428a3a88fbcffd40bd069129ecd47c059f8a3f17c55f3b",
+    "config_digest": "sha256:151292169170da9f8414b68c8e5994c75bd9cbb94ff60b8bc90860c4994b0946"
   },
   "node": {
-    "source": "prom/node-exporter:v1.9.1",
-    "reference": "prom/node-exporter@sha256:d00a542e409ee618a4edc67da14dd48c5da66726bbd5537ab2af9c1dfc442c8a",
-    "config_digest": "sha256:255ec253085fb105696533b31864a5e3b64f1f1e2147b5ec368100cbf3ec9b80"
+    "source": "ai-platform-blueprint-node:security",
+    "reference": "sha256:bc27d5bc10aa73050a3d78dac628a1300e4ae1e943fd7f0c34f5e7ddcf859b9e",
+    "config_digest": "sha256:bc27d5bc10aa73050a3d78dac628a1300e4ae1e943fd7f0c34f5e7ddcf859b9e"
   },
   "distribution": {
-    "source": "registry:3",
-    "reference": "registry@sha256:d4032d4cc323c1731c707931ecada07a53076eac38e3b61ae57533f170f2c6c3",
-    "config_digest": "sha256:ab6936a3291f1ddd0e9a88108f4739553a2cfff91489df98c0e24def15701a1c"
+    "source": "ai-platform-blueprint-distribution:security",
+    "reference": "sha256:2428f95d1215a94535cbda663988f42a024b850113c359c955695372a90a1dc2",
+    "config_digest": "sha256:2428f95d1215a94535cbda663988f42a024b850113c359c955695372a90a1dc2"
+  },
+  "grafana": {
+    "source": "ai-platform-blueprint-grafana:security",
+    "reference": "sha256:3d6c7ffe3e4f984f8881f86bb887a71769e4b924ec7b75bf3a57296cf5453d4d",
+    "config_digest": "sha256:3d6c7ffe3e4f984f8881f86bb887a71769e4b924ec7b75bf3a57296cf5453d4d"
+  },
+  "loki": {
+    "source": "grafana/loki:3.7.9",
+    "reference": "grafana/loki@sha256:0db216b630ae1f348a1584c67f3cead8b4c1fc839169a39501db664744158e28",
+    "config_digest": "sha256:5d47ead9b695cb22fb4851f09efd40ffd41db92278d847bdfafc25f9c5d654e7"
+  },
+  "alloy": {
+    "source": "grafana/alloy:v1.21.3",
+    "reference": "grafana/alloy@sha256:8ab871206bd2d8f89277f53abffee5f452a293980788d52f85fa183a87a505a4",
+    "config_digest": "sha256:f203d78239ad619363d4f1aa5d5ca85424155ab36518c9bc913ceb54f4370380"
+  },
+  "tempo": {
+    "source": "ai-platform-blueprint-tempo:security",
+    "reference": "sha256:4cab9c715153ae915ef90d8adcc81a01374aaa6b39bfd82f817ea7baf556f6ae",
+    "config_digest": "sha256:4cab9c715153ae915ef90d8adcc81a01374aaa6b39bfd82f817ea7baf556f6ae"
+  },
+  "blackbox": {
+    "source": "prom/blackbox-exporter:v0.29.1",
+    "reference": "prom/blackbox-exporter@sha256:ea1c7aa3ef3f307cd03e85f34abb604478ccb90b567fc690da0cd9776da76b13",
+    "config_digest": "sha256:e6f02b1a6c427e2a771fb33b42cb167dde3e5e8b3625e55e55aa20aaa018946d"
+  },
+  "postgres_exporter": {
+    "source": "ai-platform-blueprint-postgres-exporter:security",
+    "reference": "sha256:2b358ee1a17f0c59fb15e0d56b1b2ad0f9f5a3fbdcacf0c1e87051cb8af12f1e",
+    "config_digest": "sha256:2b358ee1a17f0c59fb15e0d56b1b2ad0f9f5a3fbdcacf0c1e87051cb8af12f1e",
+    "source_version": "v0.20.1"
+  },
+  "redis_exporter": {
+    "source": "ai-platform-blueprint-redis-exporter:privacy",
+    "reference": "sha256:8ab17bb0f6c6af9d755f351122dfcd2372dc91d99f3f1c7b485333b688af2399",
+    "config_digest": "sha256:8ab17bb0f6c6af9d755f351122dfcd2372dc91d99f3f1c7b485333b688af2399",
+    "source_revision": "72d2a71f1f7c91fc4564083bc4c58655df85e5d0"
+  },
+  "ollama": {
+    "source": "ai-platform-blueprint-ollama:cpu-security",
+    "reference": "sha256:adffbcbefbb5f446f04d069997b464e53c8518780a6ab3eb0234498810f7c8b7",
+    "config_digest": "sha256:adffbcbefbb5f446f04d069997b464e53c8518780a6ab3eb0234498810f7c8b7"
   }
 }

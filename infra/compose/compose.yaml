@@ -111,6 +111,7 @@ services:
     image: traefik:v3.6.1
     user: '65532:65532'
     read_only: true
+    tmpfs: ['/tmp:size=64m,mode=1777']
     command:
       - --entrypoints.web.address=:8080
       - --providers.file.filename=/etc/traefik/routes.yml

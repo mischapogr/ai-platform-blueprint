@@ -13,6 +13,19 @@ Priorities reflect the current single-owner application, rather than a technolog
 scorecard. Estimates are rough focused engineering days, including validation and
 documentation, excluding access delays and hardware procurement.
 
+The [2026-11-04 requirements audit](REQUIREMENTS-AUDIT.md) checks profile-specific
+coverage. The PDF incident exposed missing large-upload/route-priority regression,
+missing monitoring in the VM profile and an HTTP trace-boundary issue; these are
+tracked by the [operator monitoring acceptance](LOCAL-OBSERVABILITY.md), rather
+than inferred from healthy containers.
+
+The follow-up adds outside-guest HTTPS checks, restricted database/cache exporters,
+container history, a local Grafana alert inbox, scheduled synthetic workflow and
+encrypted backup/isolated restore checks. Full runtime scan/SBOM coverage now has a
+strict qualification gate. Some upstream images still fail it; development
+publication is explicitly distinguished from qualified publication. Human answer review, CMS synchronization and offsite/key custody retain their
+stated boundaries. The CPU model VM profile is now implemented and checked locally. See [operator commands](LOCAL-OBSERVABILITY.md).
+
 ## Delivery order
 
 | ID | Priority | Deliverable | Estimate | Dependencies | Roadmap |
@@ -99,7 +112,10 @@ Acceptance criteria:
 
 ## B03 — Trace requests and asynchronous ingestion
 
-**Status:** Implemented and locally qualified on 2026-11-03. See the
+**Status:** Implemented with isolated qualification on 2026-11-03 and live VM
+log/trace correlation qualification on 2026-11-04. The latter includes an HTTP
+ingress context-isolation correction and independent upload-to-job trace checks.
+See the [operator walkthrough](LOCAL-OBSERVABILITY.md) and
 [tracing guide](../observability/tempo/README.md). The disposable qualification
 uses actual Tempo export, cross-process parent checks, retry attempts, a privacy
 canary and a refused exporter connection. Remote CI and production load remain unverified.
@@ -196,8 +212,10 @@ Acceptance criteria:
 
 **Status:** Implemented and executed: eight synthetic cases each run with fixed
 and retrieved evidence, versioned prompts, per-case outputs and a review rubric.
-Observed failures include obeying a source instruction and fabricated citations
-in a direct empty-evidence test. Literal/wording checks also produce false failures.
+The earlier v1 run exposed source-instruction obedience and fabricated citations.
+The v2 source-excerpt boundary validates verbatim spans/citations and abstains on
+empty evidence without inference. The 2026-11-04 rerun passed all automatic checks
+across the same 16 fixed/retrieved cases.
 Human evidence-support review remains pending; there is no automated groundedness
 approval. See [ANSWER-EVALUATION.md](ANSWER-EVALUATION.md).
 
@@ -249,8 +267,9 @@ Acceptance criteria:
 provenance/checksums and populated-data upgrade/rollback are qualified. The local
 OCI registry publishes the verified archive; a development Cosign key signs the
 image envelope and deployment checks it. Altered payloads/untrusted keys are
-rejected. Runtime images are pinned/mirrored; their full scan/SBOM policy and
-public release trust remain open. See [RELEASE-QUALIFICATION.md](RELEASE-QUALIFICATION.md).
+rejected. Runtime images are pinned/mirrored with a strict full-runtime scan/SBOM and
+qualified-publication gate. Remaining upstream findings block that gate; public
+release trust remains open. See [RELEASE-QUALIFICATION.md](RELEASE-QUALIFICATION.md).
 
 **Starting points:** [CI](../.github/workflows/ci.yml),
 [API image](../apps/api/Dockerfile), [Compose](../infra/compose/compose.yaml),
@@ -274,8 +293,9 @@ three-object retention and fresh-QEMU-disk recovery drill are implemented. The
 source VM/disk is removed, runtime credentials regenerated, recovered content and
 vectors compared, and chat/new ingestion checked. Actual measured receipt:
 `.local/lab/recovery-receipt.json`. This is one physical workstation. Physical
-offsite storage, scheduled backups/failure escalation, independent key custody and
-production RPO/RTO remain unqualified.
+offsite storage, independent key custody and production RPO/RTO remain unqualified.
+Local user timers, failure/freshness alerts and authenticated isolated restore
+comparisons are implemented; natural calendar execution is tracked separately.
 
 **Starting points:** [backups.py](../scripts/backups.py),
 [restore test](../scripts/restore-test.sh), [DR guide](DISASTER-RECOVERY.md).

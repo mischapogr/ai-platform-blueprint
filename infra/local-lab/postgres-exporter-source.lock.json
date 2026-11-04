@@ -1,0 +1,14 @@
+{
+  "builder": "golang@sha256:d200d2dd76b03a99b52651fd1325aff7dcd35422c35c01bac56571b0507f3deb",
+  "url": "https://github.com/prometheus-community/postgres_exporter/archive/refs/tags/v0.20.1.tar.gz",
+  "sha256": "be5d9b71cdedcc5bd484869a2a1c66e51f76d5620ebf681781f22acc0cba283b",
+  "version": "v0.20.1",
+  "module_updates": {
+    "golang.org/x/net": "v0.60.0"
+  },
+  "build_args": {
+    "GO_IMAGE": "golang@sha256:d200d2dd76b03a99b52651fd1325aff7dcd35422c35c01bac56571b0507f3deb",
+    "SOURCE_URL": "https://github.com/prometheus-community/postgres_exporter/archive/refs/tags/v0.20.1.tar.gz",
+    "SOURCE_SHA256": "be5d9b71cdedcc5bd484869a2a1c66e51f76d5620ebf681781f22acc0cba283b"
+  }
+}

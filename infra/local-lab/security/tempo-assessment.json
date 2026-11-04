@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "policy": "exact-artifact-source-proof-v1",
+  "component": "Grafana Tempo datasource",
+  "plugin_version": "13.4.2",
+  "image_config_digest": "sha256:3d6c7ffe3e4f984f8881f86bb887a71769e4b924ec7b75bf3a57296cf5453d4d",
+  "artifact_path": "usr/share/grafana/data/plugins-bundled/tempo/gpx_grafana-tempo-datasource_linux_amd64",
+  "artifact_sha256": "74b1b188d86aa0f7a41cf0bf9f67f6b8a0a256acd811fddb89b5a91eec175895",
+  "official_package": {
+    "version": "13.4.2",
+    "url": "https://grafana.com/api/plugins/tempo/versions/13.4.2/download?os=linux&arch=amd64",
+    "sha256": "2717de75a5b6a1a27d79603e3eedd728a5d824be4411cf81af0fe3fcc7a779b2"
+  },
+  "module": {
+    "path": "github.com/grafana/tempo",
+    "version": "v1.5.1-0.20260910130453-bcfe9f230c1d",
+    "sum": "h1:BphMCaYqWY+j1fdRPNFPkYE4A4QIev1KlHjRkSVJ8O4=",
+    "commit": "bcfe9f230c1de0f79cfd2110b38062e0f41c81e9"
+  },
+  "justification": "vulnerable_code_not_present",
+  "fixes": {
+    "CVE-2026-21728": {
+      "upstream_fix": "650eb1985a0776789c8564122990f588a742356f",
+      "source_file": "modules/frontend/config.go",
+      "source_file_sha256": "53d4636b20ebb2b0e38e31b6dce5ef08eea8130cc01dcd2aa5515372e9d7339c",
+      "fixed_code_fact": "MaxLimit:               256 * 1024,",
+      "advisory": "https://grafana.com/security/security-advisories/cve-2026-21728/",
+      "comparison": "https://github.com/grafana/tempo/compare/650eb1985a0776789c8564122990f588a742356f...bcfe9f230c1de0f79cfd2110b38062e0f41c81e9"
+    },
+    "CVE-2026-28377": {
+      "upstream_fix": "bb8ca663db34a0980c9758b40d918fda3b4dbec3",
+      "source_file": "tempodb/backend/s3/config.go",
+      "source_file_sha256": "e189ee9c2857831814b2512b4bcdb202783aa3dcc2ad3c9ae785ad6e3a71c10a",
+      "fixed_code_fact": "CustomerEncryptionKey flagext.Secret",
+      "advisory": "https://grafana.com/security/security-advisories/cve-2026-28377/",
+      "comparison": "https://github.com/grafana/tempo/compare/bb8ca663db34a0980c9758b40d918fda3b4dbec3...bcfe9f230c1de0f79cfd2110b38062e0f41c81e9"
+    }
+  },
+  "source_imports": [
+    "github.com/grafana/tempo/pkg/tempopb/common/v1",
+    "github.com/grafana/tempo/pkg/tempopb/resource/v1",
+    "github.com/grafana/tempo/pkg/tempopb/trace/v1",
+    "github.com/grafana/tempo/pkg/tempopb"
+  ],
+  "linked_tempo_function_count": 1497,
+  "source_archive": {
+    "url": "https://github.com/grafana/grafana-tempo-datasource/archive/refs/tags/v13.4.2.tar.gz",
+    "sha256": "c15f6b16f5bf6b3f6c5065b14cc0816077163bc216ff0642dd32d4d8b1c2ea0e"
+  },
+  "verification": {
+    "binary_matches_official_package": true,
+    "live_plugin_signature": "valid",
+    "module_sum_matches_binary": true,
+    "both_fixes_are_ancestors": true,
+    "affected_source_packages_absent": true,
+    "affected_linked_functions_absent": true
+  }
+}

@@ -41,7 +41,7 @@ def qmp(name, operation):
         return value
 
 
-def ssh(name, command, *, input=None, timeout=600, check=True):
+def ssh_args(name):
     folder = directory(name)
     marker = json.loads((folder / "metadata.json").read_text())
     if marker["lab_id"] != state()["id"]:
@@ -67,13 +67,26 @@ def ssh(name, command, *, input=None, timeout=600, check=True):
         "-o",
         "UserKnownHostsFile=" + str(folder / "known_hosts"),
         "lab@127.0.0.1",
-        command,
     ]
-    return run(args, input=input, timeout=timeout, check=check)
+    return args
+
+
+def ssh(name, command, *, input=None, timeout=600, check=True):
+    return run(ssh_args(name) + [command], input=input, timeout=timeout, check=check)
 
 
 def create(name):
     cfg = state()
+    memory = cfg.get("vm_memory_mib", 4096)
+    cpus = cfg.get("vm_cpus", 2)
+    if (
+        type(memory) is not int
+        or not 4096 <= memory <= 16384
+        or memory % 1024
+        or type(cpus) is not int
+        or cpus not in {2, 4}
+    ):
+        raise ValueError("Invalid owned guest RAM/CPU budget")
     if "metrics_port" not in cfg:
         cfg["metrics_port"] = free_port(19090)
         save(STATE / "state.json", cfg)
@@ -151,6 +164,8 @@ def create(name):
         ]
     )
     marker = {
+        "memory_mib": cfg.get("vm_memory_mib", 4096),
+        "cpus": cfg.get("vm_cpus", 2),
         "lab_id": cfg["id"],
         "name": name,
         "image_sha256": IMAGE_SHA,
@@ -177,9 +192,9 @@ def create(name):
         "-cpu",
         "host" if acceleration == "kvm" else "max",
         "-smp",
-        "2",
+        str(cfg.get("vm_cpus", 2)),
         "-m",
-        "4096",
+        str(cfg.get("vm_memory_mib", 4096)),
         "-drive",
         f"file={disk},if=virtio,format=qcow2",
         "-cdrom",

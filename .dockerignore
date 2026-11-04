@@ -22,3 +22,7 @@
 !apps/demo-rag/frontend/**
 **/__pycache__
 **/*.pyc
+
+!infra/
+!infra/local-lab/
+!infra/local-lab/extract-plugins.py

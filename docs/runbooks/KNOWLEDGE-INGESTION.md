@@ -18,6 +18,14 @@ flowchart TD
     Failed -->|"Owner corrects input and retries"| Queue
 ```
 
+For the local VM deployment, use `make lab-diagnose LAB_VM=recovery` and
+[Grafana/Loki/Tempo troubleshooting](../LOCAL-OBSERVABILITY.md). The workstation
+Compose commands below inspect only that separate deployment.
+
+An upload rejected before HTTP 202 has not reached worker processing. Check the
+browser's Network status and the proxy log first. HTTP 413 can be a proxy routing/
+size-limit rejection; a successful HTTP 202 still requires a later `ready` state.
+
 1. Inspect `make status` and `./scripts/compose.sh logs --tail=50 worker`.
 2. `queued`: start the worker with `./scripts/compose.sh start worker`. Redis is
    a wakeup optimization; PostgreSQL owns the durable job. Redis loss does not
@@ -40,8 +48,9 @@ flowchart TD
    not erase previous encrypted backups or data already sent to a provider.
 
 Source content, URLs, keys and questions must never be added to application logs.
-The worker heartbeat is observable via `/metrics`; the alert does not send any
-external notification. A long-running job may defer the heartbeat up to its timeout.
+The worker heartbeat is observable via `/metrics`. Alert delivery depends on the
+profile: the VM routes selected alerts to its separate local receiver; it does not
+page a human. A long-running job may defer the heartbeat up to its timeout.
 
 ## Attempt ownership and crash qualification
 

@@ -139,9 +139,18 @@ def api_flow(temp):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--suite", choices=("semantic", "answers", "all"), default="all")
+    parser.add_argument(
+        "--endpoint", help="Existing loopback-only runtime; never pulled, stopped or modified"
+    )
+    parser.add_argument("--database-image", help="Reviewed local database image config digest")
     args = parser.parse_args()
+    if args.database_image:
+        import re
+
+        if not re.fullmatch(r"sha256:[a-f0-9]{64}", args.database_image):
+            raise ValueError("Database override must be an image config digest")
     binary = shutil.which("ollama")
-    if not binary:
+    if not binary and not args.endpoint:
         raise RuntimeError("Install Ollama locally before running opt-in CPU qualification")
     evidence = ROOT / ".local/evidence"
     cache = ROOT / ".local/models/qualification"
@@ -157,7 +166,23 @@ def main():
     with socket.socket() as reservation:
         reservation.bind(("127.0.0.1", 0))
         port = reservation.getsockname()[1]
-    base = f"http://127.0.0.1:{port}"
+    base = args.endpoint or f"http://127.0.0.1:{port}"
+    if args.endpoint:
+        import ipaddress
+        from urllib.parse import urlsplit
+
+        parsed = urlsplit(base)
+        if (
+            parsed.scheme != "http"
+            or not ipaddress.ip_address(parsed.hostname).is_loopback
+            or parsed.port is None
+            or parsed.path
+            or parsed.query
+            or parsed.fragment
+            or parsed.username
+            or parsed.password
+        ):
+            raise ValueError("Existing runtime must be an explicit loopback HTTP endpoint")
     env = {
         **os.environ,
         "OLLAMA_HOST": base,
@@ -202,30 +227,33 @@ def main():
     )
     report["host"]["memory_total_mib"] = memory_total
     try:
-        with (evidence / (run_id + "-runtime.log")).open("w") as log:
-            server = subprocess.Popen(  # noqa: S603 - resolved local Ollama binary
-                [binary, "serve"],
-                env=env,
-                stdout=log,  # noqa: S603
-                stderr=subprocess.STDOUT,
-                start_new_session=True,
-                cwd=ROOT,
-            )
+        if not args.endpoint:
+            with (evidence / (run_id + "-runtime.log")).open("w") as log:
+                server = subprocess.Popen(  # noqa: S603 - resolved local Ollama binary
+                    [binary, "serve"],
+                    env=env,
+                    stdout=log,  # noqa: S603
+                    stderr=subprocess.STDOUT,
+                    start_new_session=True,
+                    cwd=ROOT,
+                )
 
-        def sample_memory():
-            while not stop_monitor.is_set():
-                observed = resident_kib(server.pid)
-                if observed is not None:
-                    memory_samples.append(observed)
-                stop_monitor.wait(0.25)
+            def sample_memory():
+                while not stop_monitor.is_set():
+                    observed = resident_kib(server.pid)
+                    if observed is not None:
+                        memory_samples.append(observed)
+                    stop_monitor.wait(0.25)
 
-        monitor = threading.Thread(target=sample_memory, daemon=True)
-        monitor.start()
+            monitor = threading.Thread(target=sample_memory, daemon=True)
+            monitor.start()
         with httpx.Client(base_url=base, trust_env=False, timeout=120) as client:
             wait(lambda: client.get("/api/version").status_code == 200)
             report["runtime"] = client.get("/api/version").json()
-            for model in ("nomic-embed-text:latest", "llama3.2:3b"):
-                pull(client, model)
+            report["existing_loopback_runtime"] = bool(args.endpoint)
+            if not args.endpoint:
+                for model in ("nomic-embed-text:latest", "llama3.2:3b"):
+                    pull(client, model)
         docker(
             "create",
             "--name",
@@ -246,7 +274,7 @@ def main():
             "POSTGRES_USER=platform_admin",
             "-e",
             "POSTGRES_PASSWORD=synthetic-benchmark-only",
-            "pgvector/pgvector:0.8.1-pg16-bookworm",
+            args.database_image or "pgvector/pgvector:0.8.1-pg16-bookworm",
         )
         owned_db = True
         docker("start", db_name)
@@ -342,7 +370,8 @@ def main():
         if disposable.input_hash() != tested_inputs:
             raise RuntimeError("Qualification inputs changed during execution; rerun without edits")
         stop_monitor.set()
-        monitor.join(timeout=2)
+        if monitor is not None:
+            monitor.join(timeout=2)
         report["host"]["sampled_peak_sum_rss_mib"] = (
             max(memory_samples) / 1024 if memory_samples else None
         )

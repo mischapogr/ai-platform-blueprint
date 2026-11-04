@@ -1,0 +1,19 @@
+{
+  "url": "https://github.com/pgvector/pgvector/archive/refs/tags/v0.8.1.tar.gz",
+  "sha256": "a9094dfb85ccdde3cbb295f1086d4c71a20db1d26bf1d6c39f07a7d164033eb4",
+  "builder": "postgres@sha256:0cefaabd882e42bcb2a2f3dc56d3ce4770560ba62fd7f197f1a2e008fd5731ab",
+  "build_arg": "POSTGRES_IMAGE",
+  "gosu": {
+    "url": "https://github.com/tianon/gosu/archive/refs/tags/1.19.tar.gz",
+    "sha256": "cd9719b775dbfedae53923c9b0dc792b66d42c51e0b36652ed6f747fbadc0164"
+  },
+  "go_builder": "golang@sha256:d200d2dd76b03a99b52651fd1325aff7dcd35422c35c01bac56571b0507f3deb",
+  "build_args": {
+    "POSTGRES_IMAGE": "postgres@sha256:0cefaabd882e42bcb2a2f3dc56d3ce4770560ba62fd7f197f1a2e008fd5731ab",
+    "SOURCE_URL": "https://github.com/pgvector/pgvector/archive/refs/tags/v0.8.1.tar.gz",
+    "SOURCE_SHA256": "a9094dfb85ccdde3cbb295f1086d4c71a20db1d26bf1d6c39f07a7d164033eb4",
+    "GO_IMAGE": "golang@sha256:d200d2dd76b03a99b52651fd1325aff7dcd35422c35c01bac56571b0507f3deb",
+    "GOSU_SOURCE_URL": "https://github.com/tianon/gosu/archive/refs/tags/1.19.tar.gz",
+    "GOSU_SOURCE_SHA256": "cd9719b775dbfedae53923c9b0dc792b66d42c51e0b36652ed6f747fbadc0164"
+  }
+}

@@ -1,20 +1,25 @@
 """Encrypted recovery across fresh local QEMU disks; not physical offsite recovery."""
 
 import hashlib
+import ipaddress
 import json
 import os
+import re
 import shlex
 import shutil
 import ssl
+import subprocess
 import time
 import uuid
+from contextlib import contextmanager
 from datetime import UTC, datetime
 
 import httpx
+import psycopg
 from cryptography.fernet import Fernet, InvalidToken
 
 from . import acceptance, deploy, registry, vm
-from .common import PRIVATE, ROOT, STATE, run, save, secret, state
+from .common import PRIVATE, ROOT, STATE, free_port, run, save, secret, state, wait
 
 MAX_DUMP = 64 * 1024 * 1024
 SNAPSHOT = """SELECT json_build_object(
@@ -27,17 +32,109 @@ SNAPSHOT = """SELECT json_build_object(
    FROM kb_chunks) ch))"""
 
 
+def normalize_snapshot(value):
+    for source in value["sources"]:
+        raw = source.pop("payload_hex")
+        source["payload_sha256"] = hashlib.sha256(bytes.fromhex(raw or "")).hexdigest()
+    return value
+
+
 def snapshot(name):
     result = acceptance.command(
         name,
         "exec -T db psql -U platform_admin -d platform -At -v ON_ERROR_STOP=1 -c "
         + shlex.quote(SNAPSHOT),
     )
-    value = json.loads(result.stdout)
-    for source in value["sources"]:
-        raw = source.pop("payload_hex")
-        source["payload_sha256"] = hashlib.sha256(bytes.fromhex(raw or "")).hexdigest()
-    return value
+    return normalize_snapshot(json.loads(result.stdout))
+
+
+@contextmanager
+def snapshot_connection(name):
+    container = acceptance.command(name, "ps -q db").stdout.decode().strip()
+    if not re.fullmatch(r"[a-f0-9]{12,64}", container):
+        raise ValueError("Unknown guest database container")
+    address = (
+        vm.ssh(
+            name,
+            "sudo docker inspect --format "
+            + shlex.quote("{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}")
+            + " "
+            + container,
+        )
+        .stdout.decode()
+        .strip()
+    )
+    if not ipaddress.ip_address(address).is_private:
+        raise ValueError("Database is outside the owned guest private network")
+    port = free_port(0)
+    base = vm.ssh_args(name)
+    args = base[:-1] + [
+        "-N",
+        "-o",
+        "ExitOnForwardFailure=yes",
+        "-L",
+        f"127.0.0.1:{port}:{address}:5432",
+        base[-1],
+    ]
+    with (STATE / "database-tunnel.log").open("ab") as log:
+        process = subprocess.Popen(args, stdout=log, stderr=subprocess.STDOUT)  # noqa: S603
+    connection = None
+    try:
+
+        def connect():
+            try:
+                return psycopg.connect(
+                    host="127.0.0.1",
+                    port=port,
+                    dbname="platform",
+                    user="platform_app",
+                    password=(PRIVATE / "app_password").read_text().strip(),
+                    connect_timeout=2,
+                    options="-c statement_timeout=30000 -c lock_timeout=1000",
+                )
+            except psycopg.OperationalError:
+                return False
+
+        connection = wait(
+            connect, seconds=15, message="Private database snapshot tunnel unavailable"
+        )
+        connection.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY")
+        yield connection
+    finally:
+        if connection:
+            connection.close()
+        process.terminate()
+        try:
+            process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.wait(timeout=5)
+
+
+def consistent_dump(name):
+    with snapshot_connection(name) as connection:
+        exported = connection.execute("SELECT pg_export_snapshot()").fetchone()[0]
+        if not re.fullmatch(r"[0-9A-Fa-f-]{1,100}", exported):
+            raise ValueError("Invalid exported snapshot identifier")
+        golden = normalize_snapshot(connection.execute(SNAPSHOT).fetchone()[0])
+        code = (
+            "import subprocess,sys; "
+            "p=subprocess.Popen(['docker','compose','--project-name','blueprint-local','--file',"
+            f"'{deploy.GUEST}/compose.yaml','exec','-T','db','pg_dump','-U','platform_admin',"
+            "'-d','platform','--format=custom','--no-owner','--no-acl',"
+            + repr("--snapshot=" + exported)
+            + "],stdout=subprocess.PIPE); "
+            f"data=p.stdout.read({MAX_DUMP + 1}); "
+            f"p.kill() if len(data)>{MAX_DUMP} else None; "
+            f"ok=p.wait()==0 and len(data)<={MAX_DUMP} and data.startswith(b'PGDMP'); "
+            "sys.stdout.buffer.write(data) if ok else sys.exit(1)"
+        )
+        dump = vm.ssh(name, "sudo python3 -c " + shlex.quote(code), timeout=180).stdout
+        return dump, golden
+
+
+def golden_bytes(golden):
+    return json.dumps(golden, sort_keys=True, separators=(",", ":")).encode()
 
 
 def terraform(name, operation):
@@ -92,24 +189,14 @@ def backup(name):
     escrow = PRIVATE / "escrow"
     escrow.mkdir(exist_ok=True, mode=0o700)
     key = escrow / "backup.key"
+    if not key.exists() and (STATE / "backup-index.json").exists():
+        raise RuntimeError("Backup key missing; refusing to replace existing escrow")
     if not key.exists():
         key.write_bytes(Fernet.generate_key())
         key.chmod(0o600)
     cipher = Fernet(key.read_bytes())
     start = datetime.now(UTC)
-    golden = snapshot(name)
-    # Read at most 64 MiB in the guest before sending plaintext over encrypted SSH.
-    code = (
-        "import subprocess,sys; "
-        "p=subprocess.Popen(['docker','compose','--project-name','blueprint-local','--file',"
-        f"'{deploy.GUEST}/compose.yaml','exec','-T','db','pg_dump','-U','platform_admin',"
-        "'-d','platform','--format=custom','--no-owner','--no-acl'],stdout=subprocess.PIPE); "
-        f"data=p.stdout.read({MAX_DUMP + 1}); "
-        f"p.kill() if len(data)>{MAX_DUMP} else None; "
-        f"ok=p.wait()==0 and len(data)<={MAX_DUMP} and data.startswith(b'PGDMP'); "
-        "sys.stdout.buffer.write(data) if ok else sys.exit(1)"
-    )
-    raw = vm.ssh(name, "sudo python3 -c " + shlex.quote(code), timeout=180).stdout
+    raw, golden = consistent_dump(name)
     encrypted = cipher.encrypt(raw)
     filename = datetime.now(UTC).strftime("%Y%m%dT%H%M%S") + "-" + uuid.uuid4().hex + ".fernet"
     with store_client() as store:
@@ -147,15 +234,25 @@ def backup(name):
         "encrypted_sha256": hashlib.sha256(encrypted).hexdigest(),
         "key_sha256": hashlib.sha256(key.read_bytes()).hexdigest(),
         "negative_checks": negatives,
+        "golden_sha256": hashlib.sha256(golden_bytes(golden)).hexdigest(),
     }
+    golden_path = STATE / "golden" / filename
+    golden_path.parent.mkdir(exist_ok=True, mode=0o700)
+    golden_path.write_bytes(cipher.encrypt(golden_bytes(golden)))
+    golden_path.chmod(0o600)
+    if cipher.decrypt(golden_path.read_bytes()) != golden_bytes(golden):
+        raise AssertionError("Encrypted comparison authentication failed")
     index.append(record)
+    save(manifest_path, index[-3:])
     with store_client() as store:
         for old in index[:-3]:
             store.delete("/backup-store/" + old["filename"]).raise_for_status()
-    save(manifest_path, index[-3:])
-    if snapshot(name) != golden:
-        raise RuntimeError("Source changed during backup; original guest retained")
-    save(STATE / "backup-golden.json", golden)
+    legacy = STATE / "backup-golden.json"
+    if legacy.exists():
+        # Retire only the derived plaintext receipt written by this tool.
+        legacy.unlink()
+    for old in index[:-3]:
+        (golden_path.parent / old["filename"]).unlink(missing_ok=True)
     print(
         "Encrypted backup uploaded, downloaded, authenticated; wrong key/corruption rejected.",
         flush=True,

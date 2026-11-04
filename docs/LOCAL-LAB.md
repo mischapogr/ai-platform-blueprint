@@ -2,7 +2,7 @@
 
 This profile keeps infrastructure on one workstation: a TLS/authenticated OCI
 Distribution registry, a QEMU Ubuntu guest, Terraform's local state, Ansible,
-Prometheus, node exporter and Alertmanager. The owner selected the standard OCI
+Prometheus, node exporter, Alertmanager, Grafana, Loki, Alloy and Tempo. The owner selected the standard OCI
 registry; Nexus is optional and its Community Edition terms were not accepted.
 There is no public registry, cloud account, external signing identity or spending.
 
@@ -63,6 +63,7 @@ checksum/source-material identity. It is not an externally attested SLSA release
 Read the chosen ports from `.local/lab/state.json`; preferred ports are:
 
 - UI: `https://localhost:18443` (HTTP `18080` redirects to HTTPS).
+- Grafana: `https://localhost:18443/grafana/` (separate local monitoring login).
 - OCI registry: `https://localhost:15443` (requires authentication).
 - Guest Prometheus: `http://localhost:19090` (local management only).
 - Guest SSH: `127.0.0.1:16222`, using `.secrets/local-lab/lab_ssh`.
@@ -85,6 +86,24 @@ Public WordPress rendered pages can use this importer. A dedicated WordPress RES
 connector for explicitly trusted private sites, authenticated drafts, pagination
 and synchronization is still future work; do not weaken the generic SSRF boundary
 to connect a private CMS. No existing CMS or credentials were accessed by this lab.
+
+## Monitoring and troubleshooting
+
+The VM now includes the monitoring services, API/worker trace export, proxy/API log
+collection and a provisioned operator dashboard. Username `admin` and password file
+`.secrets/local-lab/grafana_password` open Grafana. Follow the
+[local observability walkthrough](LOCAL-OBSERVABILITY.md) for health, Loki queries,
+trace links, diagnosis and an evidence-based view of remaining requirements.
+
+```bash
+make lab-diagnose LAB_VM=recovery
+make lab-monitoring-test LAB_VM=recovery
+```
+
+The monitoring regression includes large synthetic PDFs through the actual TLS
+proxy, preserved size limits, an intentional parser failure, independent traces
+linked to the correct worker job, and log/trace privacy. It leaves the clearly
+named synthetic collection for operator exploration. It does not use real sources.
 
 ## Acceptance and recovery
 
@@ -148,8 +167,31 @@ Destroy only the selected guest through its existing Terraform state:
 make lab-destroy LAB_VM=recovery
 ```
 
-Stop the owned registry project with `make lab-stop`. Volumes, encrypted backups,
+Stop the owned registry project with `make lab-stop`. The proxy metadata log-rotation
+timer runs only inside the guest and disappears with its disposable disk. Volumes, encrypted backups,
 keys, image cache and receipts are retained for review. No wildcard Docker cleanup
 or deletion of another project's containers/volumes is performed. This profile
 creates no recurring cloud costs; the operator owns local resource usage and key
 custody. Never commit `.local`, `.secrets`, VM disks, private corpora or state.
+
+### Extended monitoring, schedules and security qualification
+
+The local profile now includes outside-guest verified HTTPS probes, aggregate
+PostgreSQL/Redis exporters, guest-only container resource history and a **Local
+alerts** Grafana/Alertmanager inbox. Follow [LOCAL-OBSERVABILITY.md](LOCAL-OBSERVABILITY.md)
+for queries, bounded fault checks and schedule ownership.
+
+`make lab-schedule-install LAB_VM=recovery` enables only this project's user timers:
+workflow every 15 minutes, backup at 19:20, isolated restore at 19:40 (host local
+time). They require the user manager and Docker; no linger/global settings are
+changed. Disable those project timers before stopping/removing this lab. Backup
+and comparison use one database snapshot and are encrypted. The isolated restore
+uses a temporary, network-disabled database; it never replaces the working VM.
+
+`make lab-runtime-audit` scans every runtime image and emits CycloneDX SBOMs.
+`make lab-qualified-publish` requires a fresh full-runtime gate before any
+publication and signs the summary checksum. Unknown or applicable HIGH/CRITICAL
+findings block this path. The two exact signed Tempo plugin findings have a
+[source applicability assessment](TEMPO-SOURCE-ASSESSMENT.md); raw findings stay visible. `lab-publish` is explicitly a development publication and records that full
+runtime security is unqualified. Never treat the earlier clean API-only scan as
+approval of every supporting service.

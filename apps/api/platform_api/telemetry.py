@@ -6,6 +6,7 @@ from contextlib import contextmanager
 from functools import wraps
 
 from opentelemetry import trace
+from opentelemetry.context import Context
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
@@ -81,9 +82,16 @@ def trace_id():
 
 
 @contextmanager
-def span(name, *, parent=None, **values):
+def span(name, *, parent=None, root=False, **values):
     tracer = _provider.get_tracer("platform") if _provider else trace.NoOpTracer()
-    context = _propagator.extract({"traceparent": parent}) if parent else None
+    # Server ingress must not inherit context left by connection/body processing.
+    context = (
+        _propagator.extract({"traceparent": parent}, context=Context())
+        if parent
+        else Context()
+        if root
+        else None
+    )
     with tracer.start_as_current_span(
         name,
         context=context,

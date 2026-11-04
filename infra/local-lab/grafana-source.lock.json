@@ -1,0 +1,41 @@
+{
+  "builder": "python@sha256:7984cf56ceaddebe4fefeb75d64000b9f45d8b77b11a09b24524da6cdc3af0c8",
+  "base": {
+    "source": "grafana/grafana:13.3.0",
+    "reference": "grafana/grafana@sha256:488984b716c0862639f91a698adbe2862677a5a07bad42da5f03f3030883b205",
+    "config_digest": "sha256:6afa1ab7f6e662c739a45a1d458598d7eb6ab70fc7c0ab45af64864e1503d4b6"
+  },
+  "plugins": {
+    "loki": {
+      "version": "13.2.5",
+      "url": "https://grafana.com/api/plugins/loki/versions/13.2.5/download?os=linux&arch=amd64",
+      "sha256": "982cfb81977352db65404cec671952453454643bd9a6c883041c38be519a74ea"
+    },
+    "prometheus": {
+      "version": "13.2.5",
+      "url": "https://grafana.com/api/plugins/prometheus/versions/13.2.5/download?os=linux&arch=amd64",
+      "sha256": "d24df3eaff9ae61f00d7e857f508fc306912dcf50d657150d1e472e851799fc4"
+    },
+    "tempo": {
+      "version": "13.4.2",
+      "url": "https://grafana.com/api/plugins/tempo/versions/13.4.2/download?os=linux&arch=amd64",
+      "sha256": "2717de75a5b6a1a27d79603e3eedd728a5d824be4411cf81af0fe3fcc7a779b2"
+    }
+  },
+  "build_args": {
+    "PLUGIN_BUILDER": "python@sha256:7984cf56ceaddebe4fefeb75d64000b9f45d8b77b11a09b24524da6cdc3af0c8"
+  },
+  "removed_plugins": [
+    "cloudwatch",
+    "elasticsearch",
+    "grafana-postgresql-datasource",
+    "grafana-pyroscope-datasource",
+    "influxdb",
+    "jaeger",
+    "mssql",
+    "mysql",
+    "opentsdb",
+    "stackdriver",
+    "zipkin"
+  ]
+}

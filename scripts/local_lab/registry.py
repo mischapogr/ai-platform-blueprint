@@ -4,13 +4,16 @@ import base64
 import importlib.util
 import json
 import os
+import ssl
 import subprocess
 import tempfile
 import uuid
 from pathlib import Path
 
+import httpx
+
 from .bootstrap import cosign
-from .common import BIN, PRIVATE, ROOT, STATE, docker, image_lock, run, save, secret, state
+from .common import BIN, PRIVATE, ROOT, STATE, docker, image_lock, run, save, secret, state, wait
 
 
 def bundle_module():
@@ -87,16 +90,48 @@ def copy_archive(archive, name):
     return {"reference": immutable, "config_digest": manifest["config"]["digest"]}
 
 
-def publish(bundle=None):
+def publish(bundle=None, *, qualified=False):
     cfg = state()
     if not cfg.get("registry_ready"):
         raise RuntimeError("Initialize the local OCI registry first")
+    # A restarted authentication receiver may be running before it serves requests.
+    with httpx.Client(
+        verify=ssl.create_default_context(cafile=str(PRIVATE / "ca.crt")),
+        trust_env=False,
+        timeout=5,
+        auth=("lab", (PRIVATE / "registry-password").read_text().strip()),
+    ) as registry_api:
+        wait(
+            lambda: (
+                registry_api.get(f"https://localhost:{cfg['registry_port']}/v2/").status_code == 200
+            ),
+            seconds=30,
+            message="Local registry TLS/auth is not ready; run make lab-diagnose",
+        )
     release = bundle_module()
     if bundle is None:
         paths = list((ROOT / ".local/evidence/releases").glob("api-release-*"))
         bundle = max(paths, key=lambda p: p.stat().st_mtime)
     release.verify(bundle)
     provenance = json.loads((bundle / "provenance.json").read_text())
+    security_sha = None
+    if qualified:
+        from .runtime_security import audit
+
+        if not audit(api_digest=provenance["image_config_digest"]):
+            raise RuntimeError("Full runtime security gate blocked; no release published")
+        security_sha = release.digest(ROOT / ".local/evidence/runtime-security/summary.json")
+    runtime_images = image_lock()
+    if qualified:
+        from .runtime_security import require_clean_receipt, runtime_inventory
+
+        summary = ROOT / ".local/evidence/runtime-security/summary.json"
+        require_clean_receipt(
+            json.loads(summary.read_text()),
+            runtime_inventory(api_digest=provenance["image_config_digest"]),
+        )
+        if release.digest(summary) != security_sha:
+            raise ValueError("Runtime scan receipt changed during publication")
     previous = STATE / "published.json"
     published = json.loads(previous.read_text()) if previous.exists() else {"images": {}}
     images = published["images"]
@@ -108,8 +143,22 @@ def publish(bundle=None):
             raise ValueError("Published image config differs from the scanned archive")
         images["api"] = result
         save(previous, published)
-    for name in ("db", "redis", "proxy", "prometheus", "alertmanager", "node"):
-        locked = image_lock()[name]
+    for name in (
+        "db",
+        "redis",
+        "proxy",
+        "prometheus",
+        "alertmanager",
+        "node",
+        "grafana",
+        "loki",
+        "alloy",
+        "tempo",
+        "postgres_exporter",
+        "redis_exporter",
+        *(["ollama"] if "ollama" in runtime_images else []),
+    ):
+        locked = runtime_images[name]
         if images.get(name, {}).get("config_digest") == locked["config_digest"]:
             continue
         print("Mirroring digest-pinned runtime image: " + name, flush=True)
@@ -124,6 +173,8 @@ def publish(bundle=None):
     published.update(
         {
             "schema": 1,
+            "full_runtime_security_passed": qualified,
+            "runtime_security_summary_sha256": security_sha,
             "lab_id": cfg["id"],
             "api_bundle_manifest_sha256": release.digest(bundle / "manifest.json"),
             "api_source_materials_sha256": provenance["source_materials_sha256"],

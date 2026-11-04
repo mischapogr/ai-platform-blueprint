@@ -1,0 +1,17 @@
+{
+  "builder": "golang@sha256:d200d2dd76b03a99b52651fd1325aff7dcd35422c35c01bac56571b0507f3deb",
+  "runtime": "alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a",
+  "url": "https://github.com/ollama/ollama/archive/refs/tags/v0.40.14.tar.gz",
+  "sha256": "cc5c0c0320a1e8763dd62a06b334858084123fe5b394a2a58a5979e3ac6317a5",
+  "llama_url": "https://github.com/ggml-org/llama.cpp/archive/refs/tags/b11963.tar.gz",
+  "llama_sha256": "4fc376548691756dad5d3f71ac7024c8ec831c7a40c1b4af946e5db234dab6bb",
+  "version": "0.40.14",
+  "build_args": {
+    "GO_IMAGE": "golang@sha256:d200d2dd76b03a99b52651fd1325aff7dcd35422c35c01bac56571b0507f3deb",
+    "SOURCE_URL": "https://github.com/ollama/ollama/archive/refs/tags/v0.40.14.tar.gz",
+    "SOURCE_SHA256": "cc5c0c0320a1e8763dd62a06b334858084123fe5b394a2a58a5979e3ac6317a5",
+    "ALPINE_IMAGE": "alpine@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a",
+    "LLAMA_SOURCE_URL": "https://github.com/ggml-org/llama.cpp/archive/refs/tags/b11963.tar.gz",
+    "LLAMA_SOURCE_SHA256": "4fc376548691756dad5d3f71ac7024c8ec831c7a40c1b4af946e5db234dab6bb"
+  }
+}

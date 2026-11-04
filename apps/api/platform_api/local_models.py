@@ -49,7 +49,9 @@ def request(path, payload=None):
     try:
         base = endpoint()
         with httpx.Client(
-            trust_env=False, follow_redirects=False, timeout=httpx.Timeout(60, connect=2)
+            trust_env=False,
+            follow_redirects=False,
+            timeout=httpx.Timeout(180 if path == "/api/chat" else 60, connect=2),
         ) as client:
             with client.stream(
                 "GET" if payload is None else "POST", base + path, json=payload
@@ -179,7 +181,7 @@ def embeddings(texts, collection, purpose):
     return vectors, token_count(data, "prompt_eval_count")
 
 
-def generate(model, instructions, messages):
+def generate(model, instructions, messages, *, schema=None):
     if model not in chat_models():
         raise ModelError("Local model is not enabled in this deployment")
     info = identity(model, "completion")
@@ -194,9 +196,10 @@ def generate(model, instructions, messages):
             "model": model,
             "stream": False,
             "messages": [{"role": "system", "content": instructions}, *messages],
+            **({"format": schema} if schema is not None else {}),
             "options": {
                 "num_ctx": info["context_length"],
-                "num_predict": 192,
+                "num_predict": 384 if schema else 192,
                 "temperature": 0,
                 "seed": 17,
                 "num_gpu": 0,
